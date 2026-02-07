@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>For Malaysia ❤️</title>
+    <!-- Google Fonts for typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            /* Fallback */
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Modern Pastel Background */
+        body {
+            /* Soft Pink to Cream Gradient */
+            background: linear-gradient(to bottom, #fff1eb 0%, #ace0f9 100%);
+            background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+            background: radial-gradient(circle at center, #fff5f5 0%, #ffe3e3 100%);
+        }
+
+        /* Message Overlay */
+        #content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+            color: #d65db1;
+            text-shadow: 0 2px 10px rgba(255, 182, 193, 0.5);
+            width: 100%;
+            padding: 20px;
+        }
+
+        /* Act Styles */
+        #act-i,
+        #act-ii,
+        #act-iii {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: opacity 1s ease-in-out;
+            overflow: hidden;
+        }
+
+        #act-i {
+            background: linear-gradient(135deg, #fff1eb 0%, #ace0f9 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+
+        #act-ii {
+            background: radial-gradient(circle at center, #fff5f5 0%, #ffe3e3 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 15;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #act-ii:not(.hidden) {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #act-iii {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #act-iii:not(.hidden) {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* ----- Game Styles ----- */
+        .game-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .game-header {
+            margin-bottom: 20px;
+        }
+
+        #level-indicator {
+            font-family: 'Montserrat', sans-serif;
+            color: #d65db1;
+            margin-bottom: 10px;
+        }
+
+        .timer-bar {
+            width: 100%;
+            height: 10px;
+            background: #ffe3e3;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        #timer-progress {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            transition: width 0.1s linear;
+        }
+
+        #game-grid {
+            display: grid;
+            gap: 10px;
+            justify-content: center;
+            margin: 0 auto;
+            perspective: 1000px;
+        }
+
+        /* Grid Layouts based on card count */
+        /* Level 1: 4 cards (2x2) */
+        .grid-4 {
+            grid-template-columns: repeat(2, 1fr);
+            max-width: 300px;
+        }
+
+        /* Level 2: 8 cards (4x2 or 2x4) mobile friendly: 4x2 */
+        .grid-8 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        /* Level 3: 12 cards (4x3) */
+        .grid-12 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        @media (max-width: 450px) {
+            .grid-8 {
+                grid-template-columns: repeat(2, 1fr);
+                max-width: 300px;
+            }
+
+            .grid-12 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .card {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s, box-shadow 0.3s;
+            cursor: pointer;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 400px) {
+            .card {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        .card.flipped,
+        .card.matched {
+            transform: rotateY(180deg);
+        }
+
+        .card.selected {
+            box-shadow: 0 0 15px #ffb7c5;
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-front {
+            background-color: #fff;
+            background-image: url('assets/card_black.png');
+            background-size: cover;
+            background-position: center;
+            background: linear-gradient(45deg, #ff9a9e 25%, #fad0c4 25%, #fad0c4 50%, #ff9a9e 50%, #ff9a9e 75%, #fad0c4 75%, #fad0c4 100%);
+            background-size: 20px 20px;
+        }
+
+        .card-back {
+            background-color: white;
+            transform: rotateY(180deg);
+            font-size: 2rem;
+            color: #d65db1;
+            font-weight: bold;
+        }
+
+        .card-back img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+        }
+
+        #game-message {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+        }
+
+        #game-message h3 {
+            font-size: 2rem;
+            color: #d65db1;
+            margin-bottom: 20px;
+            font-family: 'Great Vibes', cursive;
+        }
+
+        /* Button Style */
+        button {
+            background: #ffb7c5;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 183, 197, 0.4);
+            font-family: 'Montserrat', sans-serif;
+            transition: transform 0.2s, box-shadow 0.2s;
+            animation: pulse 2s infinite;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 183, 197, 0.6);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        h1 {
+            font-family: 'Great Vibes', cursive;
+            font-size: 4rem;
+            margin-bottom: 10px;
+            font-weight: normal;
+            opacity: 0;
+            animation: fadeIn 2s ease-out forwards;
+        }
+
+        p {
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            color: #886070;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 1s forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 3rem;
+            }
+
+            p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Act I: The Wait -->
+    <div id="act-i">
+        <div class="content-wrapper">
+            <h1>Something Special...</h1>
+            <button id="start-btn">Click here for a surprise</button>
+        </div>
+    </div>
+
+    <!-- Act II: The Game -->
+    <div id="act-ii" class="hidden">
+        <div class="game-container">
+            <div class="game-header">
+                <h2 id="level-indicator">Level 1</h2>
+                <div class="timer-bar">
+                    <div id="timer-progress"></div>
+                </div>
+            </div>
+            <div id="game-grid">
+                <!-- Cards injected by JS -->
+            </div>
+            <div id="game-message" class="hidden">
+                <h3 id="game-message-text"></h3>
+                <button id="game-restart-btn">Try Again</button>
+                <button id="game-next-btn" class="hidden">Next Level</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Act III: The Reveal -->
+    <div id="act-iii" class="hidden">
+        <div id="content">
+            <h1>Happy Valentine's Day,<br>Malaysia</h1>
+            <p>Touch the screen...</p>
+        </div>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        /**
+         * Valentine's Day Interactive Experience
+         * Act I: Cover
+         * Act II: Memory Game
+         * Act III: Canvas Particle System
+         */
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+        let active = false; // State Management
+
+        // --- GAME STATE ---
+        const gameState = {
+            level: 1,
+            cards: [], // Array of card objects {id, value, element}
+            flippedCards: [], // Currently selected cards (max 2)
+            matchedPairs: 0,
+            isLocked: false, // Prevent interaction during animations
+            timer: null,
+            timeLeft: 0,
+            levels: [
+                { id: 1, pairs: 2, time: 30 }, // 4 cards
+                { id: 2, pairs: 4, time: 45 }, // 8 cards
+                { id: 3, pairs: 6, time: 55 }  // 12 cards
+            ],
+            assets: ['C', 'E', 'I', 'N', 'Q', 'R', 'T', 'U']
+        };
+
+        // DOM Elements for Game
+        const gameGrid = document.getElementById('game-grid');
+        const levelIndicator = document.getElementById('level-indicator');
+        const timerProgress = document.getElementById('timer-progress');
+        const gameMessage = document.getElementById('game-message');
+        const gameMessageText = document.getElementById('game-message-text');
+        const nextBtn = document.getElementById('game-next-btn');
+        const restartBtn = document.getElementById('game-restart-btn');
+
+        // --- ACT TRANSITIONS ---
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            transitionToAct2();
+        });
+
+        function transitionToAct2() {
+            const act1 = document.getElementById('act-i');
+            const act2 = document.getElementById('act-ii');
+
+            act1.style.opacity = '0';
+            setTimeout(() => {
+                act1.style.display = 'none';
+                act2.classList.remove('hidden');
+                void act2.offsetWidth;
+                act2.style.opacity = '1';
+
+                startGameLevel(1);
+            }, 1000);
+        }
+
+        function transitionToAct3() {
+            const act2 = document.getElementById('act-ii');
+            const act3 = document.getElementById('act-iii');
+
+            act2.style.opacity = '0';
+            setTimeout(() => {
+                act2.style.display = 'none';
+                act3.classList.remove('hidden');
+                void act3.offsetWidth;
+                act3.style.opacity = '1';
+
+                // Start Canvas Animation
+                active = true;
+                resize();
+                initParticles();
+                animate();
+            }, 1000);
+        }
+
+        // --- GAME LOGIC ---
+
+        function startGameLevel(levelId) {
+            const levelConfig = gameState.levels.find(l => l.id === levelId);
+            gameState.level = levelId;
+            gameState.matchedPairs = 0;
+            gameState.flippedCards = [];
+            gameState.isLocked = false;
+            gameState.timeLeft = levelConfig.time;
+
+            // UI Update
+            levelIndicator.textContent = `Level ${levelId}`;
+            gameMessage.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            restartBtn.classList.add('hidden');
+
+            // Grid Setup
+            gameGrid.className = ''; // Reset classes
+            gameGrid.classList.add(`grid-${levelConfig.pairs * 2}`);
+            gameGrid.innerHTML = '';
+
+            // Generate Cards
+            const cards = generateCards(levelConfig.pairs);
+            cards.forEach(cardData => {
+                const cardEl = createCardElement(cardData);
+                gameGrid.appendChild(cardEl);
+            });
+
+            // Start Timer
+            startTimer(levelConfig.time);
+        }
+
+        function generateCards(pairsCount) {
+            let deck = [];
+            // Select random assets for this level
+            const levelAssets = gameState.assets.slice(0, pairsCount).length < pairsCount
+                ? [...gameState.assets].sort(() => 0.5 - Math.random()).slice(0, pairsCount)
+                : gameState.assets.slice(0, pairsCount);
+
+            // Create pairs
+            levelAssets.forEach(asset => {
+                deck.push({ value: asset, id: Math.random() });
+                deck.push({ value: asset, id: Math.random() });
+            });
+
+            // Shuffle
+            return deck.sort(() => 0.5 - Math.random());
+        }
+
+        function createCardElement(cardData) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.value = cardData.value;
+
+            // Faces
+            const front = document.createElement('div');
+            front.className = 'card-face card-front';
+
+            const back = document.createElement('div');
+            back.className = 'card-face card-back';
+
+            const img = document.createElement('img');
+            img.src = `assets/${cardData.value}.png`;
+            img.alt = cardData.value;
+            img.onerror = function () { this.style.display = 'none'; this.parentNode.innerText = cardData.value; }; // Fallback to text
+            back.appendChild(img);
+
+            card.appendChild(front);
+            card.appendChild(back);
+
+            // Interaction
+            // 1. Hover/Tap Peek
+            let peekTimeout;
+
+            // PEEK modification: Check if any card is selected
+            const peek = () => {
+                if (gameState.flippedCards.length > 0) return; // Disable peek if card selected
+
+                if (gameState.isLocked || card.classList.contains('flipped') || card.classList.contains('matched') || card.classList.contains('selected')) return;
+
+                card.classList.add('flipped');
+                peekTimeout = setTimeout(() => {
+                    // Only flip back if it WAS NOT selected during the peek period
+                    if (!card.classList.contains('selected') && !card.classList.contains('matched')) {
+                        card.classList.remove('flipped');
+                    }
+                }, 1500);
+            };
+
+            card.addEventListener('mouseenter', peek);
+
+            // 2. Click/Tap Select
+            card.addEventListener('click', (e) => {
+                if (gameState.isLocked) return;
+
+                // If it's matched or selected, ignore
+                if (card.classList.contains('selected') || card.classList.contains('matched')) return;
+
+                selectCard(card);
+                clearTimeout(peekTimeout); // Stop it from flipping back automatically if triggered by peek
+            });
+
+            return card;
+        }
+
+        function selectCard(card) {
+            if (gameState.isLocked) return;
+            if (card.classList.contains('selected') || card.classList.contains('matched')) return;
+
+            // Ensure it's flipped
+            card.classList.add('flipped');
+            card.classList.add('selected');
+
+            gameState.flippedCards.push(card);
+
+            if (gameState.flippedCards.length === 2) {
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            gameState.isLocked = true;
+            const [card1, card2] = gameState.flippedCards;
+
+            const match = card1.dataset.value === card2.dataset.value;
+
+            if (match) {
+                card1.classList.remove('selected');
+                card2.classList.remove('selected');
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                gameState.matchedPairs++;
+                gameState.flippedCards = [];
+                gameState.isLocked = false;
+
+                // Check Level Win
+                const levelConfig = gameState.levels.find(l => l.id === gameState.level);
+                if (gameState.matchedPairs === levelConfig.pairs) {
+                    handleLevelWin();
+                }
+
+            } else {
+                // No Match
+                setTimeout(() => {
+                    card1.classList.remove('selected', 'flipped');
+                    card2.classList.remove('selected', 'flipped');
+                    gameState.flippedCards = [];
+                    gameState.isLocked = false;
+                }, 1000);
+            }
+        }
+
+        function startTimer(seconds) {
+            clearInterval(gameState.timer);
+            gameState.timeLeft = seconds;
+            updateTimerUI(seconds, seconds);
+
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft--;
+                updateTimerUI(gameState.timeLeft, seconds);
+
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(gameState.timer);
+                    handleLevelLoss();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI(current, total) {
+            const pct = (current / total) * 100;
+            timerProgress.style.width = `${pct}%`;
+            if (pct < 30) timerProgress.style.background = '#ff6b6b';
+            else timerProgress.style.background = 'linear-gradient(90deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%)';
+        }
+
+        function handleLevelWin() {
+            clearInterval(gameState.timer);
+            setTimeout(() => {
+                if (gameState.level === 3) {
+                    transitionToAct3();
+                } else {
+                    gameMessageText.textContent = "Level Complete! ❤️";
+                    nextBtn.classList.remove('hidden');
+                    gameMessage.classList.remove('hidden');
+
+                    nextBtn.onclick = () => {
+                        startGameLevel(gameState.level + 1);
+                    };
+                }
+            }, 1000);
+        }
+
+        function handleLevelLoss() {
+            gameMessageText.textContent = "Time's up! 💔";
+            restartBtn.classList.remove('hidden');
+            gameMessage.classList.remove('hidden');
+
+            restartBtn.onclick = () => {
+                startGameLevel(gameState.level);
+            };
+        }
+
+        // --- CANVAS LOGIC (Act III) ---
+        // Configuration
+        const CONFIG = {
+            particleCount: 60,
+            heartColor: '#ffb7c5',
+            heartColor2: '#ff6b6b',
+            interactionRadius: 150,
+            mouseForce: 0.1,
+        };
+
+        // Mouse/Touch State for Canvas
+        const mouse = { x: -1000, y: -1000 };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            if (active) initParticles();
+        }
+
+        window.addEventListener('resize', resize);
+
+        function updateMouse(e) {
+            if (!active) return;
+            const x = e.clientX || (e.touches && e.touches[0].clientX);
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            if (x !== undefined && y !== undefined) {
+                mouse.x = x;
+                mouse.y = y;
+            }
+        }
+
+        function resetMouse() {
+            mouse.x = -1000;
+            mouse.y = -1000;
+        }
+
+        window.addEventListener('mousemove', updateMouse);
+        window.addEventListener('mouseleave', resetMouse);
+        window.addEventListener('touchstart', updateMouse, { passive: false });
+        window.addEventListener('touchmove', (e) => {
+            if (!active) return;
+            e.preventDefault();
+            updateMouse(e);
+        }, { passive: false });
+        window.addEventListener('touchend', resetMouse);
+
+        class Particle {
+            constructor() {
+                this.init(true);
+            }
+
+            init(randomY = false) {
+                this.x = Math.random() * width;
+                this.y = randomY ? Math.random() * height : height + 20;
+                this.size = Math.random() * 10 + 5;
+                this.baseSize = this.size;
+
+                const colors = ['#ff9a9e', '#fad0c4', '#ffecd2', '#fcb69f', '#ffb7c5'];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+
+                this.speedY = Math.random() * 1.5 + 0.5;
+                this.speedX = Math.random() * 0.5 - 0.25;
+                this.wobble = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = Math.random() * 0.05 + 0.02;
+
+                this.vx = 0;
+                this.vy = 0;
+
+                this.opacity = Math.random() * 0.5 + 0.3;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                const s = this.size / 10;
+                ctx.scale(s, s);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(-5, -5, -10, 0, 0, 10);
+                ctx.bezierCurveTo(10, 0, 5, -5, 0, 0);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.wobble += this.wobbleSpeed;
+                this.y -= this.speedY;
+                this.x += Math.sin(this.wobble) * 0.5 + this.speedX;
+
+                const dx = this.x - mouse.x;
+                const dy = this.y - mouse.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < CONFIG.interactionRadius) {
+                    const force = (CONFIG.interactionRadius - dist) / CONFIG.interactionRadius;
+                    const angle = Math.atan2(dy, dx);
+                    const fx = Math.cos(angle) * force * 15;
+                    const fy = Math.sin(angle) * force * 15;
+                    this.vx += fx;
+                    this.vy += fy;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= 0.9;
+                this.vy *= 0.9;
+
+                if (this.y < -50 || this.x < -50 || this.x > width + 50) {
+                    this.init(false);
+                }
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            let count = CONFIG.particleCount;
+            if (width < 600) count = count * 0.6;
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            if (!active) return;
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        resize();
+    </script>
+</body>
+
+</html>
