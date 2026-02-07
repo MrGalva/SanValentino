@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>For Malaysia ❤️</title>
     <!-- Google Fonts for typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Montserrat:wght@300;500;700&display=swap"
         rel="stylesheet">
     <style>
         * {
@@ -48,6 +48,12 @@
             padding: 20px;
         }
 
+        #content button {
+            pointer-events: auto;
+            margin: 10px;
+            /* Space between buttons */
+        }
+
         /* Act Styles */
         #act-i,
         #act-ii,
@@ -70,7 +76,8 @@
         }
 
         #act-ii {
-            background: radial-gradient(circle at center, #fff5f5 0%, #ffe3e3 100%);
+            /* Transparent background so canvas shows */
+            background: transparent;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -86,6 +93,14 @@
         }
 
         #act-iii {
+            /* Transparent background so canvas shows */
+            background: rgba(255, 255, 255, 0.3);
+            /* Subtle overlay for contrast */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 15;
             opacity: 0;
             pointer-events: none;
         }
@@ -114,7 +129,35 @@
         #level-indicator {
             font-family: 'Montserrat', sans-serif;
             color: #d65db1;
+            margin-bottom: 5px;
+            text-shadow: 0 1px 3px rgba(255, 255, 255, 0.8);
+            font-weight: bold;
+        }
+
+        #score-display {
+            font-family: 'Montserrat', sans-serif;
+            color: #ff6b6b;
+            font-size: 1.2rem;
+            font-weight: bold;
             margin-bottom: 10px;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+            animation: bounceIn 0.5s;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            60% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .timer-bar {
@@ -124,6 +167,7 @@
             border-radius: 5px;
             overflow: hidden;
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
         #timer-progress {
@@ -131,6 +175,13 @@
             height: 100%;
             background: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
             transition: width 0.1s linear;
+        }
+
+        /* Freeze Effect */
+        #timer-progress.frozen {
+            background: #a1c4fd !important;
+            /* Blue ice color */
+            box-shadow: 0 0 10px #a1c4fd;
         }
 
         #game-grid {
@@ -141,31 +192,97 @@
             perspective: 1000px;
         }
 
-        /* Grid Layouts based on card count */
-        /* Level 1: 4 cards (2x2) */
+        /* Grid Layouts based on card count (pairs * 2) */
+
+        /* Level 1: 4 cards (2 pairs) */
         .grid-4 {
             grid-template-columns: repeat(2, 1fr);
             max-width: 300px;
         }
 
-        /* Level 2: 8 cards (4x2 or 2x4) mobile friendly: 4x2 */
         .grid-8 {
             grid-template-columns: repeat(4, 1fr);
+            max-width: 300px;
         }
 
-        /* Level 3: 12 cards (4x3) */
+        /* 6 Pairs (12 cards) */
         .grid-12 {
             grid-template-columns: repeat(4, 1fr);
+            max-width: 400px;
+        }
+
+        /* 6 Pairs override? Previous logic used grid-6 for 12 cards, let's standardize.
+           If pairs=6, grid class is grid-12.
+        */
+
+        /* 7 Pairs (14 cards) */
+        .grid-14 {
+            grid-template-columns: repeat(4, 1fr);
+            /* 4 cols x 4 rows (2 empty) */
+            max-width: 400px;
+        }
+
+        /* 8 Pairs (16 cards) */
+        .grid-16 {
+            grid-template-columns: repeat(4, 1fr);
+            /* 4 cols x 4 rows perfect */
+            max-width: 400px;
+        }
+
+        /* 9 Pairs (18 cards) */
+        .grid-18 {
+            grid-template-columns: repeat(6, 1fr);
+            max-width: 500px;
+        }
+
+        /* 10 Pairs (20 cards) */
+        .grid-20 {
+            grid-template-columns: repeat(5, 1fr);
+            max-width: 500px;
+        }
+
+        @media (max-width: 600px) {
+
+            .grid-12,
+            .grid-14,
+            .grid-16 {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .grid-18 {
+                grid-template-columns: repeat(4, 1fr);
+                /* 4 cols, 5 rows (2 empty) */
+            }
+
+            .grid-20 {
+                grid-template-columns: repeat(4, 1fr);
+                /* 4 cols x 5 rows perfect */
+            }
         }
 
         @media (max-width: 450px) {
-            .grid-8 {
-                grid-template-columns: repeat(2, 1fr);
-                max-width: 300px;
-            }
-
             .grid-12 {
                 grid-template-columns: repeat(3, 1fr);
+            }
+
+            .grid-14 {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 5px;
+            }
+
+            .grid-16 {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 5px;
+            }
+
+            .grid-18 {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 5px;
+            }
+
+            .grid-20 {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 5px;
             }
         }
 
@@ -192,7 +309,37 @@
         }
 
         .card.selected {
-            box-shadow: 0 0 15px #ffb7c5;
+            box-shadow: 0 0 24px #ec7d93;
+        }
+
+        /* Visual Effects */
+        .card.effect-pulse {
+            /* animation: card-pulse 2s infinite; */
+            box-shadow: 0 0 18px #8cc6fc;
+        }
+
+        .card.effect-glow {
+            box-shadow: 0 0 10px #ffd700;
+            /* Gold glow */
+        }
+
+        .card.effect-malus {
+            border: 2px solid #ff6b6b;
+            /* Red border warning */
+        }
+
+        @keyframes card-pulse {
+            0% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(1.2);
+            }
+
+            100% {
+                filter: brightness(1);
+            }
         }
 
         .card-face {
@@ -209,7 +356,7 @@
 
         .card-front {
             background-color: #fff;
-            background-image: url('assets/card_black.png');
+            background-image: url('assets/card_back.png');
             background-size: cover;
             background-position: center;
             background: linear-gradient(45deg, #ff9a9e 25%, #fad0c4 25%, #fad0c4 50%, #ff9a9e 50%, #ff9a9e 75%, #fad0c4 75%, #fad0c4 100%);
@@ -236,7 +383,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -249,6 +396,7 @@
             color: #d65db1;
             margin-bottom: 20px;
             font-family: 'Great Vibes', cursive;
+            padding: 0 20px;
         }
 
         /* Button Style */
@@ -256,7 +404,7 @@
             background: #ffb7c5;
             border: none;
             padding: 15px 30px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             color: white;
             border-radius: 50px;
             cursor: pointer;
@@ -264,6 +412,14 @@
             font-family: 'Montserrat', sans-serif;
             transition: transform 0.2s, box-shadow 0.2s;
             animation: pulse 2s infinite;
+            margin: 5px;
+        }
+
+        /* Secondary Button (Arcade) */
+        button.secondary-btn {
+            background: #a1c4fd;
+            /* Soft Blue */
+            box-shadow: 0 4px 15px rgba(161, 196, 253, 0.4);
         }
 
         button:hover {
@@ -292,6 +448,9 @@
             font-weight: normal;
             opacity: 0;
             animation: fadeIn 2s ease-out forwards;
+            color: #d65db1;
+            text-shadow: 0 2px 10px rgba(255, 182, 193, 0.5);
+            text-align: center;
         }
 
         p {
@@ -300,6 +459,7 @@
             color: #886070;
             opacity: 0;
             animation: fadeIn 2s ease-out 1s forwards;
+            text-align: center;
         }
 
         @keyframes fadeIn {
@@ -321,6 +481,8 @@
             position: absolute;
             top: 0;
             left: 0;
+            z-index: 0;
+            /* Behind everything */
         }
 
         @media (max-width: 600px) {
@@ -331,24 +493,44 @@
             p {
                 font-size: 1rem;
             }
+
+            .game-container {
+                padding: 10px;
+                max-width: 100%;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Act I: The Wait -->
+    <!-- Global Canvas Background (Visible in Act II and III) -->
+    <canvas id="canvas"></canvas>
+
+    <!-- Act I: The Wait (Intro) -->
     <div id="act-i">
         <div class="content-wrapper">
-            <h1>Something Special...</h1>
+            <h1 style="color:white; text-shadow: 0 2px 5px rgba(0,0,0,0.1);">Something Special...</h1>
             <button id="start-btn">Click here for a surprise</button>
         </div>
     </div>
 
-    <!-- Act II: The Game -->
+    <!-- Act II: The Greeting (Animation + Message) -->
     <div id="act-ii" class="hidden">
+        <div id="content">
+            <h1>Buon San Valentino,<br>Malaysia</h1>
+            <div style="display: flex; flex-direction: column; align-items: center;">
+                <button id="act2-btn">Questo è un gioco speciale per te</button>
+                <button id="act2-arcade-btn" class="secondary-btn">Arcade Mode 🎮</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Act III: The Game (Final) -->
+    <div id="act-iii" class="hidden">
         <div class="game-container">
             <div class="game-header">
+                <div id="score-display" class="hidden">Love Points: <span id="score-val">0</span></div>
                 <h2 id="level-indicator">Level 1</h2>
                 <div class="timer-bar">
                     <div id="timer-progress"></div>
@@ -359,27 +541,21 @@
             </div>
             <div id="game-message" class="hidden">
                 <h3 id="game-message-text"></h3>
-                <button id="game-restart-btn">Try Again</button>
-                <button id="game-next-btn" class="hidden">Next Level</button>
+                <div id="game-buttons">
+                    <button id="game-restart-btn">Try Again</button>
+                    <button id="game-next-btn" class="hidden">Next Level</button>
+                    <button id="game-arcade-btn" class="secondary-btn hidden">Play Arcade Mode 🎮</button>
+                </div>
             </div>
         </div>
-    </div>
-
-    <!-- Act III: The Reveal -->
-    <div id="act-iii" class="hidden">
-        <div id="content">
-            <h1>Happy Valentine's Day,<br>Malaysia</h1>
-            <p>Touch the screen...</p>
-        </div>
-        <canvas id="canvas"></canvas>
     </div>
 
     <script>
         /**
          * Valentine's Day Interactive Experience
-         * Act I: Cover
-         * Act II: Memory Game
-         * Act III: Canvas Particle System
+         * Act I: Intro
+         * Act II: Greeting
+         * Act III: Memory Game (Story or Arcade)
          */
 
         const canvas = document.getElementById('canvas');
@@ -389,31 +565,97 @@
         let particles = [];
         let active = false; // State Management
 
+        // --- CARD CONFIGURATION SYSTEM ---
+        const SPECIAL_CARDS = {
+            'X': {
+                name: 'The Revealer',
+                type: 'buff',
+                effectType: 'instant',
+                onMatch: (gameStateId) => {
+                    // Reveal all cards for 1 second
+                    const allCards = document.querySelectorAll('.card');
+                    allCards.forEach(card => {
+                        if (!card.classList.contains('matched') && !card.classList.contains('flipped')) {
+                            card.classList.add('flipped');
+                        }
+                    });
+                    setTimeout(() => {
+                        allCards.forEach(card => {
+                            if (!card.classList.contains('matched') && !card.classList.contains('selected')) {
+                                card.classList.remove('flipped');
+                            }
+                        });
+                    }, 1000);
+                },
+                description: 'Rivela tutte le carte!'
+            },
+            'T': {
+                name: 'Time Freeze',
+                type: 'buff',
+                effectType: 'duration',
+                duration: 4000,
+                visualClass: 'effect-pulse',
+                onMatch: () => {
+                    gameState.activeEffects.add('freeze_timer');
+                    const bar = document.getElementById('timer-progress');
+                    bar.classList.add('frozen');
+
+                    setTimeout(() => {
+                        gameState.activeEffects.delete('freeze_timer');
+                        bar.classList.remove('frozen');
+                    }, 4000);
+                },
+                description: 'Congela il tempo per 5s!'
+            },
+            'M': {
+                name: 'Swipe Block',
+                type: 'malus',
+                effectType: 'passive',
+                duration: 4000,
+                visualClass: 'effect-malus',
+                onMatch: () => {
+                    gameState.activeEffects.add('block_swipe');
+                    setTimeout(() => {
+                        gameState.activeEffects.delete('block_swipe');
+                    }, 4000);
+                },
+                description: 'Blocca lo swipe (Malus)!'
+            }
+        };
+
         // --- GAME STATE ---
         const gameState = {
-            level: 1,
-            cards: [], // Array of card objects {id, value, element}
-            flippedCards: [], // Currently selected cards (max 2)
+            mode: 'story', // 'story' or 'arcade'
+            level: 1, // Current level ID (Story 1-3, Arcade 1-Infinity)
+            score: 0, // Arcade Score
+            cards: [],
+            flippedCards: [],
             matchedPairs: 0,
-            isLocked: false, // Prevent interaction during animations
+            isLocked: false,
             timer: null,
             timeLeft: 0,
-            levels: [
-                { id: 1, pairs: 2, time: 30 }, // 4 cards
-                { id: 2, pairs: 4, time: 45 }, // 8 cards
-                { id: 3, pairs: 6, time: 55 }  // 12 cards
+            activeEffects: new Set(),
+            // Story Mode Levels
+            storyLevels: [
+                { id: 1, pairs: 2, time: 30, specials: [] },
+                { id: 2, pairs: 4, time: 45, specials: [] },
+                { id: 3, pairs: 6, time: 55, specials: ['X', 'T', 'K'] }
             ],
-            assets: ['C', 'E', 'I', 'N', 'Q', 'R', 'T', 'U']
+            assets: ['C', 'F', 'H', 'I', 'K', 'L', 'Y', 'N', 'Q', 'R', 'T', 'U', 'X'] // Extended for larger grids
         };
 
         // DOM Elements for Game
         const gameGrid = document.getElementById('game-grid');
         const levelIndicator = document.getElementById('level-indicator');
+        const scoreDisplay = document.getElementById('score-display');
+        const scoreVal = document.getElementById('score-val');
         const timerProgress = document.getElementById('timer-progress');
         const gameMessage = document.getElementById('game-message');
         const gameMessageText = document.getElementById('game-message-text');
+
         const nextBtn = document.getElementById('game-next-btn');
         const restartBtn = document.getElementById('game-restart-btn');
+        const arcadeBtn = document.getElementById('game-arcade-btn'); // In Win screen
 
         // --- ACT TRANSITIONS ---
 
@@ -429,12 +671,29 @@
             setTimeout(() => {
                 act1.style.display = 'none';
                 act2.classList.remove('hidden');
+
+                // Start Canvas
+                active = true;
+                resize();
+                initParticles();
+                animate();
+
                 void act2.offsetWidth;
                 act2.style.opacity = '1';
-
-                startGameLevel(1);
             }, 1000);
         }
+
+        // Story Mode Start
+        document.getElementById('act2-btn').addEventListener('click', () => {
+            gameState.mode = 'story';
+            transitionToAct3();
+        });
+
+        // Arcade Mode Start (Act II)
+        document.getElementById('act2-arcade-btn').addEventListener('click', () => {
+            startArcadeMode();
+            transitionToAct3();
+        });
 
         function transitionToAct3() {
             const act2 = document.getElementById('act-ii');
@@ -447,60 +706,141 @@
                 void act3.offsetWidth;
                 act3.style.opacity = '1';
 
-                // Start Canvas Animation
-                active = true;
-                resize();
-                initParticles();
-                animate();
+                if (gameState.mode === 'story') {
+                    startGameLevel(1);
+                }
             }, 1000);
         }
 
         // --- GAME LOGIC ---
 
+        function startArcadeMode() {
+            gameState.mode = 'arcade';
+            gameState.score = 0;
+            gameState.level = 1; // Arcade Level 1
+            startGameLevel(1);
+        }
+
+        function getArcadeConfig(level) {
+            // Updated Progression Logic per user request
+            // Levels 1-2: 6 pairs
+            // Levels 3-5: 7 pairs (14 cards)
+            // Levels 6-9: 8 pairs (16 cards)
+            // Level 10+: 9 pairs (18 cards)
+
+            let pairs = 6;
+            if (level >= 3 && level <= 5) pairs = 8;
+            else if (level >= 6 && level <= 9) pairs = 10;
+            else if (level >= 10) pairs = 10;
+
+            // Time Calculation
+            let time = pairs * 6; // slightly easier
+
+            return {
+                id: level,
+                pairs: pairs,
+                time: time,
+                specials: ['X', 'T', 'M', 'K']
+            };
+        }
+
+        function getStoryConfig(levelId) {
+            // Updated Progression Logic per user request
+
+            let pairs = 2;
+            if (levelId === 2) pairs = 4;
+            else if (levelId > 2) pairs = 8;
+
+            // Time Calculation
+            let time = pairs * 6; // slightly easier
+
+            return {
+                id: levelId,
+                pairs: pairs,
+                time: time,
+                specials: ['X', 'T', 'K']
+            };
+        }
+
         function startGameLevel(levelId) {
-            const levelConfig = gameState.levels.find(l => l.id === levelId);
+            let levelConfig;
+
+            if (gameState.mode === 'story') {
+                levelConfig = getStoryConfig(levelId);
+                scoreDisplay.classList.add('hidden');
+                levelIndicator.textContent = `Level ${levelId}`;
+            } else {
+                // Arcade
+                levelConfig = getArcadeConfig(levelId);
+                scoreDisplay.classList.remove('hidden');
+                scoreVal.textContent = gameState.score;
+                levelIndicator.textContent = `Arcade Level ${levelId}`;
+            }
+
             gameState.level = levelId;
             gameState.matchedPairs = 0;
             gameState.flippedCards = [];
             gameState.isLocked = false;
             gameState.timeLeft = levelConfig.time;
+            gameState.activeEffects.clear();
 
-            // UI Update
-            levelIndicator.textContent = `Level ${levelId}`;
             gameMessage.classList.add('hidden');
             nextBtn.classList.add('hidden');
             restartBtn.classList.add('hidden');
+            arcadeBtn.classList.add('hidden');
 
             // Grid Setup
-            gameGrid.className = ''; // Reset classes
-            gameGrid.classList.add(`grid-${levelConfig.pairs * 2}`);
+            gameGrid.className = '';
+            // Correct grid class based on card count (pairs * 2)
+            // This now maps correctly to the new CSS classes:
+            // 7 pairs -> grid-14
+            // 8 pairs -> grid-16
+            // 9 pairs -> grid-18
+            const cardCount = levelConfig.pairs * 2;
+            gameGrid.classList.add(`grid-${cardCount}`);
+
             gameGrid.innerHTML = '';
 
             // Generate Cards
-            const cards = generateCards(levelConfig.pairs);
+            const cards = generateCards(levelConfig.pairs, levelConfig.specials);
             cards.forEach(cardData => {
                 const cardEl = createCardElement(cardData);
                 gameGrid.appendChild(cardEl);
             });
 
-            // Start Timer
             startTimer(levelConfig.time);
         }
 
-        function generateCards(pairsCount) {
+        function generateCards(pairsCount, allowedSpecials = []) {
             let deck = [];
-            // Select random assets for this level
-            const levelAssets = gameState.assets.slice(0, pairsCount).length < pairsCount
-                ? [...gameState.assets].sort(() => 0.5 - Math.random()).slice(0, pairsCount)
-                : gameState.assets.slice(0, pairsCount);
 
-            // Create pairs
-            levelAssets.forEach(asset => {
+            // Logic:
+            let usedSpecials = [];
+            if (allowedSpecials && allowedSpecials.length > 0) {
+                if (pairsCount >= 5) {
+                    // 1 random special
+                    const randomSpecial = allowedSpecials[Math.floor(Math.random() * allowedSpecials.length)];
+                    usedSpecials.push(randomSpecial);
+                }
+            }
+
+            // Fill rest with Regulars
+            const neededRegulars = pairsCount - usedSpecials.length;
+            // Ensure we have enough assets
+            const pool = gameState.assets.filter(a => !usedSpecials.includes(a));
+            const shuffledRegulars = pool.sort(() => 0.5 - Math.random());
+
+            // If we run out of unique assets, we might need to reuse logic
+            // Assuming assets pool is large enough (13 assets > needed max 10 pairs)
+            const selectedRegulars = shuffledRegulars.slice(0, neededRegulars);
+
+            const finalAssets = [...usedSpecials, ...selectedRegulars];
+
+            finalAssets.forEach(asset => {
                 deck.push({ value: asset, id: Math.random() });
                 deck.push({ value: asset, id: Math.random() });
             });
 
-            // Shuffle
             return deck.sort(() => 0.5 - Math.random());
         }
 
@@ -509,7 +849,13 @@
             card.className = 'card';
             card.dataset.value = cardData.value;
 
-            // Faces
+            if (SPECIAL_CARDS[cardData.value]) {
+                const config = SPECIAL_CARDS[cardData.value];
+                if (config.visualClass) {
+                    card.classList.add(config.visualClass);
+                }
+            }
+
             const front = document.createElement('div');
             front.className = 'card-face card-front';
 
@@ -519,29 +865,22 @@
             const img = document.createElement('img');
             img.src = `assets/${cardData.value}.png`;
             img.alt = cardData.value;
-            img.onerror = function () { this.style.display = 'none'; this.parentNode.innerText = cardData.value; }; // Fallback to text
+            img.onerror = function () { this.style.display = 'none'; this.parentNode.innerText = cardData.value; };
             back.appendChild(img);
 
             card.appendChild(front);
             card.appendChild(back);
 
             // Interaction
-
-            // 1. Peek Logic (Hover / Swipe)
-            // Storing the peek timeout on the card itself to handle clearTimeouts
             const peek = () => {
-                // If any card is selected (waiting/matched), disable casual peeking
+                // if (gameState.activeEffects.has('block_swipe')) return;
                 if (gameState.flippedCards.length > 0) return;
-
                 if (gameState.isLocked || card.classList.contains('flipped') || card.classList.contains('matched') || card.classList.contains('selected')) return;
 
                 card.classList.add('flipped');
-
-                // Clear existing timeout if any
                 if (card.peekTimeout) clearTimeout(card.peekTimeout);
 
                 card.peekTimeout = setTimeout(() => {
-                    // Only flip back if it wasn't selected in the meantime
                     if (!card.classList.contains('selected') && !card.classList.contains('matched')) {
                         card.classList.remove('flipped');
                     }
@@ -550,26 +889,20 @@
 
             card.addEventListener('mouseenter', peek);
 
-            // 2. Click/Tap Select Logic
             card.addEventListener('click', (e) => {
                 if (gameState.isLocked) return;
                 if (card.classList.contains('matched') || card.classList.contains('selected')) return;
 
-                // Case 1: No card selected yet
                 if (gameState.flippedCards.length === 0) {
-                    if (card.classList.contains('flipped')) {
-                        // Card is already flipped (visible) -> Select it (Lock)
-                        selectCard(card);
-                        if (card.peekTimeout) clearTimeout(card.peekTimeout);
-                    } else {
-                        // Card is face down -> Just flip it (Peek)
-                        peek();
-                    }
+                    // if (card.classList.contains('flipped')) {
+                    //     selectCard(card);
+                    //     if (card.peekTimeout) clearTimeout(card.peekTimeout);
+                    // } else {
+                    //     peek();
+                    // }
+                    selectCard(card);
                 }
-                // Case 2: One card already selected
                 else if (gameState.flippedCards.length === 1) {
-                    // Clicking a second card immediately reveals and compares it
-                    // "quando tocchi una nuova carta questa si gira e se è uguale rimane girata"
                     selectCard(card);
                     if (card.peekTimeout) clearTimeout(card.peekTimeout);
                 }
@@ -578,13 +911,10 @@
             return card;
         }
 
-        // Global Touch Handler for Swiping/Peeking
         document.addEventListener('touchmove', function (e) {
-            // Only active in Act 2
-            const act2 = document.getElementById('act-ii');
-            if (act2.classList.contains('hidden')) return;
-
-            // Disable if a card is selected
+            const act3 = document.getElementById('act-iii');
+            if (act3.classList.contains('hidden')) return;
+            // if (gameState.activeEffects.has('block_swipe')) return;
             if (gameState.flippedCards.length > 0) return;
 
             const touch = e.touches[0];
@@ -592,7 +922,6 @@
             const card = target ? target.closest('.card') : null;
 
             if (card && !card.classList.contains('flipped')) {
-                // Trigger mouseenter event to reuse peek logic
                 const event = new Event('mouseenter');
                 card.dispatchEvent(event);
             }
@@ -602,7 +931,6 @@
             if (gameState.isLocked) return;
             if (card.classList.contains('selected') || card.classList.contains('matched')) return;
 
-            // Ensure it's flipped
             card.classList.add('flipped');
             card.classList.add('selected');
 
@@ -628,20 +956,38 @@
                 gameState.flippedCards = [];
                 gameState.isLocked = false;
 
-                // Check Level Win
-                const levelConfig = gameState.levels.find(l => l.id === gameState.level);
-                if (gameState.matchedPairs === levelConfig.pairs) {
+                // ARCADE SCORING
+                if (gameState.mode === 'arcade') {
+                    gameState.score += 200;
+                    scoreVal.textContent = gameState.score;
+                }
+
+                if (SPECIAL_CARDS[card1.dataset.value]) {
+                    const config = SPECIAL_CARDS[card1.dataset.value];
+                    if (config.onMatch) {
+                        config.onMatch(gameState);
+                    }
+                }
+
+                // Check Win
+                let requiredPairs;
+                if (gameState.mode === 'story') {
+                    requiredPairs = getStoryConfig(gameState.level).pairs;
+                } else {
+                    requiredPairs = getArcadeConfig(gameState.level).pairs;
+                }
+
+                if (gameState.matchedPairs === requiredPairs) {
                     handleLevelWin();
                 }
 
             } else {
-                // No Match
                 setTimeout(() => {
                     card1.classList.remove('selected', 'flipped');
                     card2.classList.remove('selected', 'flipped');
                     gameState.flippedCards = [];
                     gameState.isLocked = false;
-                }, 1000);
+                }, 500);
             }
         }
 
@@ -651,7 +997,10 @@
             updateTimerUI(seconds, seconds);
 
             gameState.timer = setInterval(() => {
-                gameState.timeLeft--;
+                if (!gameState.activeEffects.has('freeze_timer')) {
+                    gameState.timeLeft--;
+                }
+
                 updateTimerUI(gameState.timeLeft, seconds);
 
                 if (gameState.timeLeft <= 0) {
@@ -670,11 +1019,33 @@
 
         function handleLevelWin() {
             clearInterval(gameState.timer);
+            triggerWinParticles();
+
             setTimeout(() => {
-                if (gameState.level === 3) {
-                    transitionToAct3();
+                if (gameState.mode === 'story') {
+                    // STORY MODE WIN LOGIC
+                    if (gameState.level === 3) {
+                        gameMessageText.textContent = "You Won My Heart! ❤️";
+                        gameMessage.classList.remove('hidden');
+
+                        // Add Arcade Button here too
+                        arcadeBtn.onclick = () => {
+                            startArcadeMode();
+                        }
+                        arcadeBtn.classList.remove('hidden');
+
+                    } else {
+                        gameMessageText.textContent = "Level Complete! ❤️";
+                        nextBtn.classList.remove('hidden');
+                        gameMessage.classList.remove('hidden');
+
+                        nextBtn.onclick = () => {
+                            startGameLevel(gameState.level + 1);
+                        };
+                    }
                 } else {
-                    gameMessageText.textContent = "Level Complete! ❤️";
+                    // ARCADE MODE WIN LOGIC
+                    gameMessageText.innerHTML = `Level Complete! <br> Score: ${gameState.score}`;
                     nextBtn.classList.remove('hidden');
                     gameMessage.classList.remove('hidden');
 
@@ -686,17 +1057,62 @@
         }
 
         function handleLevelLoss() {
-            gameMessageText.textContent = "Time's up! 💔";
+            if (gameState.mode === 'story') {
+                gameMessageText.textContent = "Time's up! 💔";
+                restartBtn.innerText = "Try Again";
+                restartBtn.onclick = () => {
+                    startGameLevel(gameState.level);
+                };
+            } else {
+                // ARCADE GAME OVER
+                gameMessageText.innerHTML = `Game Over! <br> Score: ${gameState.score} 💔`;
+                restartBtn.innerText = "New Arcade Run";
+                restartBtn.onclick = () => {
+                    startArcadeMode();
+                };
+            }
             restartBtn.classList.remove('hidden');
             gameMessage.classList.remove('hidden');
-
-            restartBtn.onclick = () => {
-                startGameLevel(gameState.level);
-            };
         }
 
-        // --- CANVAS LOGIC (Act III) ---
-        // Configuration
+        // --- PARTICLES ---
+        let winParticles = [];
+        class WinParticle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 8 + 4;
+                this.color = `hsl(${Math.random() * 360}, 70%, 70%)`;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 0.5) * 10 - 5;
+                this.gravity = 0.2;
+                this.life = 100;
+                this.decay = Math.random() * 2 + 1;
+            }
+            update() {
+                this.vy += this.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life / 100;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function triggerWinParticles() {
+            for (let i = 0; i < 100; i++) {
+                winParticles.push(new WinParticle(width / 2, height / 2));
+            }
+        }
+
+        // --- CANVAS LOGIC ---
         const CONFIG = {
             particleCount: 60,
             heartColor: '#ffb7c5',
@@ -705,7 +1121,6 @@
             mouseForce: 0.1,
         };
 
-        // Mouse/Touch State for Canvas
         const mouse = { x: -1000, y: -1000 };
 
         function resize() {
@@ -734,11 +1149,6 @@
         window.addEventListener('mousemove', updateMouse);
         window.addEventListener('mouseleave', resetMouse);
         window.addEventListener('touchstart', updateMouse, { passive: false });
-        window.addEventListener('touchmove', (e) => {
-            if (!active) return;
-            e.preventDefault();
-            updateMouse(e);
-        }, { passive: false });
         window.addEventListener('touchend', resetMouse);
 
         class Particle {
@@ -751,18 +1161,14 @@
                 this.y = randomY ? Math.random() * height : height + 20;
                 this.size = Math.random() * 10 + 5;
                 this.baseSize = this.size;
-
                 const colors = ['#ff9a9e', '#fad0c4', '#ffecd2', '#fcb69f', '#ffb7c5'];
                 this.color = colors[Math.floor(Math.random() * colors.length)];
-
                 this.speedY = Math.random() * 1.5 + 0.5;
                 this.speedX = Math.random() * 0.5 - 0.25;
                 this.wobble = Math.random() * Math.PI * 2;
                 this.wobbleSpeed = Math.random() * 0.05 + 0.02;
-
                 this.vx = 0;
                 this.vy = 0;
-
                 this.opacity = Math.random() * 0.5 + 0.3;
             }
 
@@ -787,7 +1193,6 @@
                 this.wobble += this.wobbleSpeed;
                 this.y -= this.speedY;
                 this.x += Math.sin(this.wobble) * 0.5 + this.speedX;
-
                 const dx = this.x - mouse.x;
                 const dy = this.y - mouse.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -800,15 +1205,11 @@
                     this.vx += fx;
                     this.vy += fy;
                 }
-
                 this.x += this.vx;
                 this.y += this.vy;
                 this.vx *= 0.9;
                 this.vy *= 0.9;
-
-                if (this.y < -50 || this.x < -50 || this.x > width + 50) {
-                    this.init(false);
-                }
+                if (this.y < -50 || this.x < -50 || this.x > width + 50) this.init(false);
             }
         }
 
@@ -825,13 +1226,14 @@
             if (!active) return;
             ctx.clearRect(0, 0, width, height);
             particles.forEach(p => {
-                p.update();
-                p.draw();
+                p.update(); p.draw();
+            });
+            winParticles.forEach((p, index) => {
+                p.update(); p.draw();
+                if (p.life <= 0) winParticles.splice(index, 1);
             });
             requestAnimationFrame(animate);
         }
-
-        resize();
     </script>
 </body>
 
