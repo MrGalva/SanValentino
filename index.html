@@ -526,18 +526,22 @@
             card.appendChild(back);
 
             // Interaction
-            // 1. Hover/Tap Peek
-            let peekTimeout;
 
-            // PEEK modification: Check if any card is selected
+            // 1. Peek Logic (Hover / Swipe)
+            // Storing the peek timeout on the card itself to handle clearTimeouts
             const peek = () => {
-                if (gameState.flippedCards.length > 0) return; // Disable peek if card selected
+                // If any card is selected (waiting/matched), disable casual peeking
+                if (gameState.flippedCards.length > 0) return;
 
                 if (gameState.isLocked || card.classList.contains('flipped') || card.classList.contains('matched') || card.classList.contains('selected')) return;
 
                 card.classList.add('flipped');
-                peekTimeout = setTimeout(() => {
-                    // Only flip back if it WAS NOT selected during the peek period
+
+                // Clear existing timeout if any
+                if (card.peekTimeout) clearTimeout(card.peekTimeout);
+
+                card.peekTimeout = setTimeout(() => {
+                    // Only flip back if it wasn't selected in the meantime
                     if (!card.classList.contains('selected') && !card.classList.contains('matched')) {
                         card.classList.remove('flipped');
                     }
@@ -546,19 +550,53 @@
 
             card.addEventListener('mouseenter', peek);
 
-            // 2. Click/Tap Select
+            // 2. Click/Tap Select Logic
             card.addEventListener('click', (e) => {
                 if (gameState.isLocked) return;
+                if (card.classList.contains('matched') || card.classList.contains('selected')) return;
 
-                // If it's matched or selected, ignore
-                if (card.classList.contains('selected') || card.classList.contains('matched')) return;
-
-                selectCard(card);
-                clearTimeout(peekTimeout); // Stop it from flipping back automatically if triggered by peek
+                // Case 1: No card selected yet
+                if (gameState.flippedCards.length === 0) {
+                    if (card.classList.contains('flipped')) {
+                        // Card is already flipped (visible) -> Select it (Lock)
+                        selectCard(card);
+                        if (card.peekTimeout) clearTimeout(card.peekTimeout);
+                    } else {
+                        // Card is face down -> Just flip it (Peek)
+                        peek();
+                    }
+                }
+                // Case 2: One card already selected
+                else if (gameState.flippedCards.length === 1) {
+                    // Clicking a second card immediately reveals and compares it
+                    // "quando tocchi una nuova carta questa si gira e se è uguale rimane girata"
+                    selectCard(card);
+                    if (card.peekTimeout) clearTimeout(card.peekTimeout);
+                }
             });
 
             return card;
         }
+
+        // Global Touch Handler for Swiping/Peeking
+        document.addEventListener('touchmove', function (e) {
+            // Only active in Act 2
+            const act2 = document.getElementById('act-ii');
+            if (act2.classList.contains('hidden')) return;
+
+            // Disable if a card is selected
+            if (gameState.flippedCards.length > 0) return;
+
+            const touch = e.touches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            const card = target ? target.closest('.card') : null;
+
+            if (card && !card.classList.contains('flipped')) {
+                // Trigger mouseenter event to reuse peek logic
+                const event = new Event('mouseenter');
+                card.dispatchEvent(event);
+            }
+        }, { passive: true });
 
         function selectCard(card) {
             if (gameState.isLocked) return;
