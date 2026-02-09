@@ -104,12 +104,12 @@ const gameState = {
     timeLeft: 0,
     activeEffects: new Set(),
     // Story Mode Levels
-    storyLevels: [
-        { id: 1, pairs: 2, time: 30, specials: [] },
-        { id: 2, pairs: 4, time: 45, specials: [] },
-        { id: 3, pairs: 6, time: 55, specials: ['X', 'T', 'K'] }
-    ],
-    assets: ['C', 'F', 'H', 'I', 'K', 'L', 'Y', 'N', 'Q', 'R', 'T', 'U', 'X'] // Extended for larger grids
+    // storyLevels: [
+    //     { id: 1, pairs: 2, time: 30, specials: [] },
+    //     { id: 2, pairs: 4, time: 45, specials: [] },
+    //     { id: 3, pairs: 6, time: 55, specials: ['X', 'T', 'K'] }
+    // ],
+    assets: ['C', 'F', 'H', 'I', 'K', 'L', 'M', 'T', 'X', 'Y']
 };
 
 // DOM Elements for Game
@@ -323,8 +323,12 @@ function generateCards(pairsCount, allowedSpecials = [], fixedAssets = null) {
     const shuffledRegulars = pool.sort(() => 0.5 - Math.random());
 
     // If we run out of unique assets, we might need to reuse logic
-    // Assuming assets pool is large enough (13 assets > needed max 10 pairs)
-    const selectedRegulars = shuffledRegulars.slice(0, neededRegulars);
+    let selectedRegulars = shuffledRegulars.slice(0, neededRegulars);
+
+    // If we don't have enough regular cards, fill with 'H'
+    while (selectedRegulars.length < neededRegulars) {
+        selectedRegulars.push('H');
+    }
 
     const finalAssets = [...usedSpecials, ...selectedRegulars];
 
