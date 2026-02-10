@@ -18,7 +18,7 @@ const SPECIAL_CARDS = {
         name: 'The Revealer',
         type: 'buff',
         effectType: 'instant',
-        onMatch: (gameStateId) => {
+        onMatch: () => {
             // Reveal all cards for 1 second
             const allCards = document.querySelectorAll('.card');
             allCards.forEach(card => {
@@ -52,14 +52,14 @@ const SPECIAL_CARDS = {
                 bar.classList.remove('frozen');
             }, 4000);
         },
-        description: 'Congela il tempo per 5s!'
+        description: 'Congela il tempo per 4s!'
     },
     'M': {
         name: 'Swipe Block',
         type: 'malus',
         effectType: 'passive',
         duration: 4000,
-        visualClass: 'effect-malus',
+        visualClass: 'effect-malus-2',
         onMatch: () => {
             gameState.activeEffects.add('block_swipe');
             const allCards = document.querySelectorAll('.card');
@@ -74,6 +74,9 @@ const SPECIAL_CARDS = {
                 allCards.forEach(card => {
                     if (card.classList.contains('effect-malus')) {
                         card.classList.remove('effect-malus');
+                    }
+                    if (card.classList.contains('effect-malus-2')) {
+                        card.classList.remove('effect-malus-2');
                     }
                 });
             }, 4000);
@@ -96,19 +99,13 @@ const gameState = {
     mode: 'story', // 'story' or 'arcade'
     level: 1, // Current level ID (Story 1-3, Arcade 1-Infinity)
     score: 0, // Arcade Score
-    cards: [],
+
     flippedCards: [],
     matchedPairs: 0,
     isLocked: false,
     timer: null,
     timeLeft: 0,
     activeEffects: new Set(),
-    // Story Mode Levels
-    // storyLevels: [
-    //     { id: 1, pairs: 2, time: 30, specials: [] },
-    //     { id: 2, pairs: 4, time: 45, specials: [] },
-    //     { id: 3, pairs: 6, time: 55, specials: ['X', 'T', 'K'] }
-    // ],
     assets: ['C', 'F', 'H', 'I', 'K', 'L', 'M', 'T', 'X', 'Y']
 };
 
@@ -190,19 +187,17 @@ function startArcadeMode() {
 }
 
 function getArcadeConfig(level) {
-    // Updated Progression Logic per user request
-    // Levels 1-2: 6 pairs
-    // Levels 3-5: 7 pairs (14 cards)
-    // Levels 6-9: 8 pairs (16 cards)
-    // Level 10+: 9 pairs (18 cards)
+    // Arcade Progression:
+    // Levels 1-2: 6 pairs (12 cards)
+    // Levels 3-5: 8 pairs (16 cards)
+    // Levels 6+:  10 pairs (20 cards)
 
     let pairs = 6;
     if (level >= 3 && level <= 5) pairs = 8;
-    else if (level >= 6 && level <= 9) pairs = 10;
-    else if (level >= 10) pairs = 10;
+    else if (level >= 6) pairs = 10;
 
     // Time Calculation
-    let time = pairs * 5; // slightly easier
+    let time = pairs * (5.1 - (1.8 * gameState.level / 10));
 
     return {
         id: level,
@@ -265,6 +260,7 @@ function startGameLevel(levelId) {
     gameState.flippedCards = [];
     gameState.isLocked = false;
     gameState.timeLeft = levelConfig.time;
+    gameState.pairs = levelConfig.pairs;
     gameState.activeEffects.clear();
 
     gameMessage.classList.add('hidden');
@@ -307,6 +303,7 @@ function generateCards(pairsCount, allowedSpecials = [], fixedAssets = null) {
     }
 
     // Logic for Arcade / Random Mode:
+    const allSpecialKeys = Object.keys(SPECIAL_CARDS);
     let usedSpecials = [];
     if (allowedSpecials && allowedSpecials.length > 0) {
         if (pairsCount > 2) {
@@ -316,10 +313,9 @@ function generateCards(pairsCount, allowedSpecials = [], fixedAssets = null) {
         }
     }
 
-    // Fill rest with Regulars
+    // Fill rest with Regulars (exclude ALL special card keys from the pool)
     const neededRegulars = pairsCount - usedSpecials.length;
-    // Ensure we have enough assets
-    const pool = gameState.assets.filter(a => !usedSpecials.includes(a));
+    const pool = gameState.assets.filter(a => !usedSpecials.includes(a) && !allSpecialKeys.includes(a));
     const shuffledRegulars = pool.sort(() => 0.5 - Math.random());
 
     // If we run out of unique assets, we might need to reuse logic
@@ -390,12 +386,6 @@ function createCardElement(cardData) {
         if (card.classList.contains('matched') || card.classList.contains('selected')) return;
 
         if (gameState.flippedCards.length === 0) {
-            // if (card.classList.contains('flipped')) {
-            //     selectCard(card);
-            //     if (card.peekTimeout) clearTimeout(card.peekTimeout);
-            // } else {
-            //     peek();
-            // }
             selectCard(card);
             if (card.peekTimeout) clearTimeout(card.peekTimeout);
         }
@@ -450,13 +440,26 @@ function checkMatch() {
         card2.classList.remove('selected');
         card1.classList.add('matched');
         card2.classList.add('matched');
+
+        // Spawn a big heart at card2's position
+        const rect = card2.getBoundingClientRect();
+        const p = new Particle();
+        p.mouseInteraction = false;
+        p.x = rect.left + rect.width / 2;
+        p.y = rect.top + rect.height / 2;
+        p.size = 32;
+        p.speedY = Math.random() * 1.5 + 0.5;
+        p.speedX = (Math.random() - 0.5) * 0.5;
+        p.opacity = 0.9;
+        particles.push(p);
+
         gameState.matchedPairs++;
         gameState.flippedCards = [];
         gameState.isLocked = false;
 
         // ARCADE SCORING
         if (gameState.mode === 'arcade') {
-            gameState.score += 200;
+            gameState.score += 200 + (20 * gameState.level);
             scoreVal.textContent = gameState.score;
         }
 
@@ -470,9 +473,9 @@ function checkMatch() {
         // Check Win
         let requiredPairs;
         if (gameState.mode === 'story') {
-            requiredPairs = getStoryConfig(gameState.level).pairs;
+            requiredPairs = gameState.pairs;
         } else {
-            requiredPairs = getArcadeConfig(gameState.level).pairs;
+            requiredPairs = gameState.pairs;
         }
 
         if (gameState.matchedPairs === requiredPairs) {
@@ -574,39 +577,16 @@ function handleLevelLoss() {
 }
 
 // --- PARTICLES ---
-let winParticles = [];
-class WinParticle {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.size = Math.random() * 8 + 4;
-        this.color = `hsl(${Math.random() * 360}, 70%, 70%)`;
-        this.vx = (Math.random() - 0.5) * 10;
-        this.vy = (Math.random() - 0.5) * 10 - 5;
-        this.gravity = 0.2;
-        this.life = 100;
-        this.decay = Math.random() * 2 + 1;
-    }
-    update() {
-        this.vy += this.gravity;
-        this.x += this.vx;
-        this.y += this.vy;
-        this.life -= this.decay;
-    }
-    draw() {
-        ctx.save();
-        ctx.globalAlpha = this.life / 100;
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-    }
-}
-
 function triggerWinParticles() {
-    for (let i = 0; i < 100; i++) {
-        winParticles.push(new WinParticle(width / 2, height / 2));
+    for (let i = 0; i < 50; i++) {
+        const p = new Particle();
+        p.x = width / 2 + (Math.random() - 0.5) * 60;
+        p.y = height / 2 + (Math.random() - 0.5) * 60;
+        p.size = Math.random() * 12 + 8;
+        p.speedY = Math.random() * 3 + 1.5;
+        p.speedX = (Math.random() - 0.5) * 2;
+        p.opacity = Math.random() * 0.4 + 0.6;
+        particles.push(p);
     }
 }
 
@@ -652,6 +632,7 @@ window.addEventListener('touchend', resetMouse);
 class Particle {
     constructor() {
         this.init(true);
+        this.mouseInteraction = true;
     }
 
     init(randomY = false) {
@@ -695,7 +676,7 @@ class Particle {
         const dy = this.y - mouse.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < CONFIG.interactionRadius) {
+        if (this.mouseInteraction && dist < CONFIG.interactionRadius) {
             const force = (CONFIG.interactionRadius - dist) / CONFIG.interactionRadius;
             const angle = Math.atan2(dy, dx);
             const fx = Math.cos(angle) * force * 15;
@@ -727,10 +708,6 @@ function animate() {
         p.update();
         p.draw();
     });
-    winParticles.forEach((p, index) => {
-        p.update();
-        p.draw();
-        if (p.life <= 0) winParticles.splice(index, 1);
-    });
+
     requestAnimationFrame(animate);
 }
