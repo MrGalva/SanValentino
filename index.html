@@ -458,6 +458,18 @@
             /* Behind everything */
         }
 
+        #version-label {
+            position: fixed;
+            bottom: 4px;
+            right: 8px;
+            font-size: 0.65rem;
+            color: rgba(150, 150, 150, 0.6);
+            font-family: 'Montserrat', sans-serif;
+            z-index: 999;
+            pointer-events: none;
+            letter-spacing: 0.5px;
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 3rem;
@@ -523,6 +535,7 @@
         </div>
     </div>
 
+    <div id="version-label">v2.1</div>
     <script src="script.js"></script>
 </body>
 
