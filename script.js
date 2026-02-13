@@ -54,6 +54,24 @@ const SPECIAL_CARDS = {
         },
         description: 'Congela il tempo per 4s!'
     },
+    'C': {
+        name: 'Time Freeze',
+        type: 'buff',
+        effectType: 'duration',
+        duration: 2000,
+        visualClass: 'effect-pulse',
+        onMatch: () => {
+            gameState.activeEffects.add('freeze_timer');
+            const bar = document.getElementById('timer-progress');
+            bar.classList.add('frozen');
+
+            setTimeout(() => {
+                gameState.activeEffects.delete('freeze_timer');
+                bar.classList.remove('frozen');
+            }, 2000);
+        },
+        description: 'Congela il tempo per 4s!'
+    },
     'M': {
         name: 'Swipe Block',
         type: 'malus',
@@ -125,6 +143,7 @@ const arcadeBtn = document.getElementById('game-arcade-btn'); // In Win screen
 // --- ACT TRANSITIONS ---
 
 document.getElementById('start-btn').addEventListener('click', () => {
+    gtag('event', 'sv_click_start');
     transitionToAct2();
 });
 
@@ -150,6 +169,7 @@ function transitionToAct2() {
 
 // Story Mode Start
 document.getElementById('act2-btn').addEventListener('click', () => {
+    gtag('event', 'sv_story_start');
     gameState.mode = 'story';
     transitionToAct3();
 });
@@ -180,6 +200,7 @@ function transitionToAct3() {
 // --- GAME LOGIC ---
 
 function startArcadeMode() {
+    gtag('event', 'sv_arcade');
     gameState.mode = 'arcade';
     gameState.score = 0;
     gameState.level = 1; // Arcade Level 1
@@ -203,7 +224,7 @@ function getArcadeConfig(level) {
         id: level,
         pairs: pairs,
         time: time,
-        specials: ['X', 'T', 'M', 'K']
+        specials: ['X', 'T', 'M', 'K', 'C']
     };
 }
 
@@ -241,6 +262,7 @@ function getStoryConfig(levelId) {
 }
 
 function startGameLevel(levelId) {
+    gtag('event', 'sv_level_start', { level: levelId, mode: gameState.mode });
     let levelConfig;
 
     if (gameState.mode === 'story') {
@@ -463,8 +485,11 @@ function checkMatch() {
             scoreVal.textContent = gameState.score;
         }
 
+        gtag('event', 'sv_match_found', { level: gameState.level, mode: gameState.mode, card: card1.dataset.value });
+
         if (SPECIAL_CARDS[card1.dataset.value]) {
             const config = SPECIAL_CARDS[card1.dataset.value];
+            gtag('event', 'sv_special_card', { card_type: config.type, level: gameState.level });
             if (config.onMatch) {
                 config.onMatch(gameState);
             }
@@ -526,7 +551,8 @@ function handleLevelWin() {
         if (gameState.mode === 'story') {
             // STORY MODE WIN LOGIC
             if (gameState.level === 5) {
-                gameMessageText.textContent = "You Won My Heart! ❤️";
+                gtag('event', 'sv_game_complete');
+                gameMessageText.textContent = "I hope this game adds a little joy to your day. It's my way of bridging the gap between us until I can see you again. Happy Valentine's Day! ❤️";
                 gameMessage.classList.remove('hidden');
 
                 // Add Arcade Button here too
@@ -536,6 +562,7 @@ function handleLevelWin() {
                 arcadeBtn.classList.remove('hidden');
 
             } else {
+                gtag('event', 'sv_level_win', { level: gameState.level, mode: 'story', time_remaining: gameState.timeLeft });
                 gameMessageText.textContent = "Level Complete! ❤️";
                 nextBtn.classList.remove('hidden');
                 gameMessage.classList.remove('hidden');
@@ -546,6 +573,7 @@ function handleLevelWin() {
             }
         } else {
             // ARCADE MODE WIN LOGIC
+            gtag('event', 'sv_level_win', { level: gameState.level, mode: 'arcade', score: gameState.score, time_remaining: gameState.timeLeft });
             gameMessageText.innerHTML = `Level Complete! <br> Score: ${gameState.score}`;
             nextBtn.classList.remove('hidden');
             gameMessage.classList.remove('hidden');
@@ -559,6 +587,7 @@ function handleLevelWin() {
 
 function handleLevelLoss() {
     if (gameState.mode === 'story') {
+        gtag('event', 'sv_level_fail', { level: gameState.level, mode: 'story' });
         gameMessageText.textContent = "Time's up! 💔";
         restartBtn.innerText = "Try Again";
         restartBtn.onclick = () => {
@@ -566,6 +595,8 @@ function handleLevelLoss() {
         };
     } else {
         // ARCADE GAME OVER
+        gtag('event', 'sv_level_fail', { level: gameState.level, mode: 'arcade' });
+        gtag('event', 'sv_arcade_score', { score: gameState.score, level: gameState.level });
         gameMessageText.innerHTML = `Game Over! <br> Score: ${gameState.score} 💔`;
         restartBtn.innerText = "New Arcade Run";
         restartBtn.onclick = () => {
