@@ -475,6 +475,43 @@
             letter-spacing: 0.5px;
         }
 
+        /* Milestone Popup */
+        #milestone-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 20px;
+            padding: 30px 40px;
+            text-align: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            box-shadow: 0 8px 40px rgba(214, 93, 177, 0.3);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        #milestone-popup.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+        }
+
+        #milestone-popup img {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-bottom: 12px;
+        }
+
+        #milestone-popup .milestone-text {
+            font-family: 'Great Vibes', cursive;
+            font-size: 1.8rem;
+            color: #d65db1;
+            text-shadow: 0 1px 4px rgba(255, 182, 193, 0.5);
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 3rem;
@@ -538,6 +575,13 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Milestone Popup -->
+    <div id="milestone-popup">
+        <img id="milestone-img" src="" alt="Milestone">
+        <div id="milestone-text" class="milestone-text"></div>
+        <button id="milestone-btn" style="margin-top: 16px;">Continue</button>
     </div>
 
     <div id="version-label">v2.1</div>

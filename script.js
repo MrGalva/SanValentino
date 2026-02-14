@@ -112,6 +112,13 @@ const SPECIAL_CARDS = {
     }
 };
 
+// --- ARCADE MILESTONES ---
+const MILESTONES = [
+    { score: 2000, img: 'assets/20.png', text: 'Amazing! 20,000 Points! 🌟 \n Take a screenshot to prove the milestone!' },
+    { score: 2500, img: 'assets/25.png', text: 'Incredible! 25,000 Points! 💖 \n Take a screenshot to prove the milestone!' },
+    { score: 3000, img: 'assets/30.png', text: 'Legendary! 30,000 Points! 🏆 \n Take a screenshot to prove the milestone!' },
+];
+
 // --- GAME STATE ---
 const gameState = {
     mode: 'story', // 'story' or 'arcade'
@@ -124,6 +131,7 @@ const gameState = {
     timer: null,
     timeLeft: 0,
     activeEffects: new Set(),
+    triggeredMilestones: new Set(),
     assets: ['C', 'F', 'H', 'I', 'K', 'L', 'M', 'T', 'X', 'Y']
 };
 
@@ -204,6 +212,7 @@ function startArcadeMode() {
     gameState.mode = 'arcade';
     gameState.score = 0;
     gameState.level = 1; // Arcade Level 1
+    gameState.triggeredMilestones.clear();
     startGameLevel(1);
 }
 
@@ -312,6 +321,14 @@ function startGameLevel(levelId) {
     startTimer(levelConfig.time);
 }
 
+function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
 function generateCards(pairsCount, allowedSpecials = [], fixedAssets = null) {
     let deck = [];
 
@@ -321,7 +338,7 @@ function generateCards(pairsCount, allowedSpecials = [], fixedAssets = null) {
             deck.push({ value: asset, id: Math.random() });
             deck.push({ value: asset, id: Math.random() });
         });
-        return deck.sort(() => 0.5 - Math.random());
+        return shuffleArray(deck);
     }
 
     // Logic for Arcade / Random Mode:
@@ -338,7 +355,7 @@ function generateCards(pairsCount, allowedSpecials = [], fixedAssets = null) {
     // Fill rest with Regulars (exclude ALL special card keys from the pool)
     const neededRegulars = pairsCount - usedSpecials.length;
     const pool = gameState.assets.filter(a => !usedSpecials.includes(a) && !allSpecialKeys.includes(a));
-    const shuffledRegulars = pool.sort(() => 0.5 - Math.random());
+    const shuffledRegulars = shuffleArray([...pool]);
 
     // If we run out of unique assets, we might need to reuse logic
     let selectedRegulars = shuffledRegulars.slice(0, neededRegulars);
@@ -355,7 +372,7 @@ function generateCards(pairsCount, allowedSpecials = [], fixedAssets = null) {
         deck.push({ value: asset, id: Math.random() });
     });
 
-    return deck.sort(() => 0.5 - Math.random());
+    return shuffleArray(deck);
 }
 
 function createCardElement(cardData) {
@@ -481,8 +498,10 @@ function checkMatch() {
 
         // ARCADE SCORING
         if (gameState.mode === 'arcade') {
+            const prevScore = gameState.score;
             gameState.score += 200 + (20 * gameState.level);
             scoreVal.textContent = gameState.score;
+            checkMilestones(prevScore, gameState.score);
         }
 
         gtag('event', 'sv_match_found', { level: gameState.level, mode: gameState.mode, card: card1.dataset.value });
@@ -534,6 +553,38 @@ function startTimer(seconds) {
             handleLevelLoss();
         }
     }, 1000);
+}
+
+// --- MILESTONE CHECK ---
+function checkMilestones(prevScore, newScore) {
+    for (const milestone of MILESTONES) {
+        if (prevScore < milestone.score && newScore >= milestone.score && !gameState.triggeredMilestones.has(milestone.score)) {
+            gameState.triggeredMilestones.add(milestone.score);
+            gtag('event', 'sv_milestone', { score: milestone.score, level: gameState.level });
+            showMilestonePopup(milestone);
+        }
+    }
+}
+
+function showMilestonePopup(milestone) {
+    const popup = document.getElementById('milestone-popup');
+    const img = document.getElementById('milestone-img');
+    const text = document.getElementById('milestone-text');
+    const btn = document.getElementById('milestone-btn');
+
+    img.src = milestone.img;
+    text.textContent = milestone.text;
+    popup.classList.add('visible');
+
+    // Pause timer and lock game
+    gameState.activeEffects.add('freeze_timer');
+    gameState.isLocked = true;
+
+    btn.onclick = () => {
+        popup.classList.remove('visible');
+        gameState.activeEffects.delete('freeze_timer');
+        gameState.isLocked = false;
+    };
 }
 
 function updateTimerUI(current, total) {
