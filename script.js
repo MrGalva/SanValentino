@@ -273,7 +273,15 @@ class AudioManager {
     }
 
     duckMusic(active) {
-        this.ambient.volume = active ? this.duckVol : this.ambientVol;
+        const vol = active ? this.duckVol : this.ambientVol;
+        if (this.useWebAudio && this.musicGain) {
+            this.musicGain.gain.cancelScheduledValues(this.ctx.currentTime);
+            this.musicGain.gain.value = vol;
+            // Prevent double-audio on Chrome by muting the element itself
+            this.ambient.volume = 0;
+        } else {
+            this.ambient.volume = vol;
+        }
     }
 
     startMusic() {
@@ -281,6 +289,7 @@ class AudioManager {
         if (this.enabled && (this.ambient.paused || this.ambient.currentTime === 0)) {
             if (this.useWebAudio && this.musicGain) {
                 this.musicGain.gain.value = this.ambientVol;
+                this.ambient.volume = 0;
             } else {
                 this.ambient.volume = this.ambientVol;
             }
@@ -289,6 +298,7 @@ class AudioManager {
             // Ensure volume is correct even if already playing
             if (this.useWebAudio && this.musicGain) {
                 this.musicGain.gain.value = this.ambientVol;
+                this.ambient.volume = 0;
             } else {
                 this.ambient.volume = this.ambientVol;
             }
