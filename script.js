@@ -146,8 +146,8 @@ class AudioManager {
         this.musicStarted = false;
 
         // ── Volume Settings (tune these) ──
-        this.sfxVol = 0.5;   // SFX volume (Web Audio gain & fallback)
-        this.ambientVol = 0.06;  // Ambient music normal volume
+        this.sfxVol = 0.3;   // SFX volume (Web Audio gain & fallback)
+        this.ambientVol = 0.04;  // Ambient music normal volume
         this.duckVol = 0.01;  // Ambient music ducked volume
 
         // Ambient Music
@@ -188,10 +188,27 @@ class AudioManager {
 
         if (!this.ctx) return; // Web Audio unavailable, rely on fallbacks
 
-        // Resume context (required for Chrome autoplay)
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume().catch(() => { });
-        }
+        // Mobile Safari Unlock: play a silent sound & resume
+        const unlock = () => {
+            if (this.ctx && this.ctx.state === 'suspended') {
+                this.ctx.resume().then(() => {
+                    // Play silent buffer to fully wake up audio engine
+                    const src = this.ctx.createBufferSource();
+                    src.buffer = this.ctx.createBuffer(1, 1, 22050);
+                    src.connect(this.ctx.destination);
+                    src.start(0);
+                });
+            }
+            document.removeEventListener('touchstart', unlock);
+            document.removeEventListener('click', unlock);
+        };
+
+        // Try to unlock immediately (if init called from user gesture)
+        unlock();
+
+        // Also add listeners in case the first attempt failed
+        document.addEventListener('touchstart', unlock);
+        document.addEventListener('click', unlock);
 
         // Decode SFX
         for (const [name, url] of Object.entries(this.sfxFiles)) {
