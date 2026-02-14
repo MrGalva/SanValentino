@@ -732,7 +732,7 @@ function handleLevelWin() {
     triggerWinParticles();
 
     setTimeout(() => {
-        audioManager.duckMusic(false);
+        // audioManager.duckMusic(false);
         audioManager.play('level');
         if (gameState.mode === 'story') {
             // STORY MODE WIN LOGIC
