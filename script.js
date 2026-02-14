@@ -167,7 +167,7 @@ class AudioManager {
         try {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             this.gainNode = this.ctx.createGain();
-            this.gainNode.gain.value = 0.5;
+            this.gainNode.gain.value = 0.1;
             this.gainNode.connect(this.ctx.destination);
         } catch (e) {
             this.useWebAudio = false;
@@ -222,7 +222,7 @@ class AudioManager {
         // Fallback Path
         if (this.fallback[name]) {
             const s = this.fallback[name].cloneNode();
-            s.volume = 0.5;
+            s.volume = 0.3;
             s.addEventListener('ended', () => s.remove());
             s.play().catch(() => { });
         }
