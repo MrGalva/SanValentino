@@ -146,7 +146,7 @@ class AudioManager {
         this.musicStarted = false;
 
         // ── Volume Settings (tune these) ──
-        this.sfxVol = 0.3;   // SFX volume (Web Audio gain & fallback)
+        this.sfxVol = 0.5;   // SFX volume (Web Audio gain & fallback)
         this.ambientVol = 0.06;  // Ambient music normal volume
         this.duckVol = 0.01;  // Ambient music ducked volume
 
