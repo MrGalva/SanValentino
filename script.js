@@ -145,9 +145,10 @@ class AudioManager {
         this.loaded = false;
         this.musicStarted = false;
 
-        // Configuration
-        this.ambientVol = 0.12;
-        this.duckVol = 0.02;
+        // ── Volume Settings (tune these) ──
+        this.sfxVol = 0.3;   // SFX volume (Web Audio gain & fallback)
+        this.ambientVol = 0.06;  // Ambient music normal volume
+        this.duckVol = 0.01;  // Ambient music ducked volume
 
         // Ambient Music
         this.ambient = new Audio('assets/sounds/ambient_music.mp3');
@@ -167,7 +168,7 @@ class AudioManager {
         try {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             this.gainNode = this.ctx.createGain();
-            this.gainNode.gain.value = 0.1;
+            this.gainNode.gain.value = this.sfxVol;
             this.gainNode.connect(this.ctx.destination);
         } catch (e) {
             this.useWebAudio = false;
@@ -222,7 +223,7 @@ class AudioManager {
         // Fallback Path
         if (this.fallback[name]) {
             const s = this.fallback[name].cloneNode();
-            s.volume = 0.3;
+            s.volume = this.sfxVol;
             s.addEventListener('ended', () => s.remove());
             s.play().catch(() => { });
         }
