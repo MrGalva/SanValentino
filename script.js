@@ -114,9 +114,9 @@ const SPECIAL_CARDS = {
 
 // --- ARCADE MILESTONES ---
 const MILESTONES = [
-    { score: 2000, img: 'assets/20.png', text: 'Amazing! 20,000 Points! 🌟 \n Take a screenshot to prove the milestone!' },
-    { score: 2500, img: 'assets/25.png', text: 'Incredible! 25,000 Points! 💖 \n Take a screenshot to prove the milestone!' },
-    { score: 3000, img: 'assets/30.png', text: 'Legendary! 30,000 Points! 🏆 \n Take a screenshot to prove the milestone!' },
+    { score: 20000, img: 'assets/20.png', text: 'Amazing! 20,000 Points! 🌟 \n Take a screenshot to prove your milestone!' },
+    { score: 25000, img: 'assets/25.png', text: 'Incredible! 25,000 Points! 💖 \n Take a screenshot to prove your milestone!' },
+    { score: 30000, img: 'assets/30.png', text: 'Legendary! 30,000 Points! 🏆 \n Take a screenshot to prove your milestone!' },
 ];
 
 // --- GAME STATE ---
