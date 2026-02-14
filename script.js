@@ -135,64 +135,136 @@ const gameState = {
     assets: ['C', 'F', 'H', 'I', 'K', 'L', 'M', 'T', 'X', 'Y']
 };
 
-// --- SOUND SYSTEM ---
-let soundEnabled = true;
-const sounds = {
-    flip: new Audio('assets/sounds/card_flip.wav'),
-    match: new Audio('assets/sounds/card_match_pop.wav'),
-    select: new Audio('assets/sounds/card_select.wav'),
-    level: new Audio('assets/sounds/level.wav'),
-    milestone: new Audio('assets/sounds/milestone.wav'),
-};
+// --- SOUND SYSTEM (AudioManager) ---
+class AudioManager {
+    constructor() {
+        this.enabled = true;
+        this.useWebAudio = true;
+        this.buffers = {};
+        this.fallback = {};
+        this.loaded = false;
+        this.musicStarted = false;
 
-// Audio pools for high-frequency sounds (fixed memory, round-robin)
-const POOL_SIZES = { flip: 20, match: 6, select: 6 };
-const soundPool = {};
-for (const [name, size] of Object.entries(POOL_SIZES)) {
-    const pool = Array.from({ length: size }, () => {
-        const clone = sounds[name].cloneNode();
-        clone.volume = 0.5;
-        return clone;
-    });
-    pool.idx = 0;
-    soundPool[name] = pool;
-}
+        // Configuration
+        this.ambientVol = 0.12;
+        this.duckVol = 0.02;
 
-// Ambient music (persistent, not cloned)
-const AMBIENT_VOLUME = 0.12;
-const AMBIENT_VOLUME_DUCKED = 0.02;
-const ambientMusic = new Audio('assets/sounds/ambient_music.mp3');
-ambientMusic.loop = true;
-ambientMusic.volume = AMBIENT_VOLUME;
+        // Ambient Music
+        this.ambient = new Audio('assets/sounds/ambient_music.mp3');
+        this.ambient.loop = true;
+        this.ambient.volume = this.ambientVol;
 
-function playSound(name) {
-    if (!soundEnabled || !sounds[name]) return;
+        // SFX Files
+        this.sfxFiles = {
+            flip: 'assets/sounds/card_flip.wav',
+            match: 'assets/sounds/card_match_pop.wav',
+            select: 'assets/sounds/card_select.wav',
+            level: 'assets/sounds/level.wav',
+            milestone: 'assets/sounds/milestone.wav',
+        };
 
-    // Pooled sounds (high-frequency)
-    if (soundPool[name]) {
-        const pool = soundPool[name];
-        const s = pool[pool.idx % pool.length];
-        pool.idx++;
-        s.currentTime = 0;
-        s.play().catch(() => { });
-        return;
+        // Web Audio Context (graceful fallback if unavailable)
+        try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.gainNode = this.ctx.createGain();
+            this.gainNode.gain.value = 0.5;
+            this.gainNode.connect(this.ctx.destination);
+        } catch (e) {
+            this.useWebAudio = false;
+            this.ctx = null;
+            this.gainNode = null;
+        }
+
+        // Pre-create fallbacks
+        for (const [name, url] of Object.entries(this.sfxFiles)) {
+            this.fallback[name] = new Audio(url);
+        }
     }
 
-    // Self-cleaning clones (low-frequency: level, milestone)
-    const s = sounds[name].cloneNode();
-    s.volume = 0.5;
-    s.addEventListener('ended', () => { s.remove(); });
-    s.play().catch(() => { });
+    init() {
+        if (this.loaded) return;
+        this.loaded = true;
+
+        if (!this.ctx) return; // Web Audio unavailable, rely on fallbacks
+
+        // Resume context (required for Chrome autoplay)
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => { });
+        }
+
+        // Decode SFX
+        for (const [name, url] of Object.entries(this.sfxFiles)) {
+            fetch(url)
+                .then(res => res.arrayBuffer())
+                .then(buf => this.ctx.decodeAudioData(buf))
+                .then(decoded => { this.buffers[name] = decoded; })
+                .catch(() => {
+                    // Only skip this sound — don't disable Web Audio globally
+                    delete this.buffers[name];
+                });
+        }
+
+    }
+
+    play(name) {
+        if (!this.enabled) return;
+
+        // Web Audio Path
+        if (this.useWebAudio && this.buffers[name]) {
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+            const source = this.ctx.createBufferSource();
+            source.buffer = this.buffers[name];
+            source.connect(this.gainNode);
+            source.start(0);
+            return;
+        }
+
+        // Fallback Path
+        if (this.fallback[name]) {
+            const s = this.fallback[name].cloneNode();
+            s.volume = 0.5;
+            s.addEventListener('ended', () => s.remove());
+            s.play().catch(() => { });
+        }
+    }
+
+    toggle() {
+        this.enabled = !this.enabled;
+        const btn = document.getElementById('sound-toggle');
+        if (btn) btn.textContent = this.enabled ? '🔊' : '🔇';
+
+        if (this.enabled) {
+            if (this.musicStarted) this.ambient.play().catch(() => { });
+        } else {
+            this.ambient.pause();
+        }
+    }
+
+    duckMusic(active) {
+        this.ambient.volume = active ? this.duckVol : this.ambientVol;
+    }
+
+    startMusic() {
+        this.musicStarted = true;
+        if (this.enabled && (this.ambient.paused || this.ambient.currentTime === 0)) {
+            this.ambient.volume = this.ambientVol;
+            this.ambient.play().catch(() => { });
+        } else if (this.enabled) {
+            this.ambient.volume = this.ambientVol;
+        }
+    }
+
+    stopMusic() {
+        this.musicStarted = false;
+        this.ambient.pause();
+        this.ambient.currentTime = 0;
+    }
 }
+
+const audioManager = new AudioManager();
 
 document.getElementById('sound-toggle').addEventListener('click', () => {
-    soundEnabled = !soundEnabled;
-    document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊' : '🔇';
-    if (soundEnabled) {
-        ambientMusic.play().catch(() => { });
-    } else {
-        ambientMusic.pause();
-    }
+    audioManager.toggle();
 });
 
 // DOM Elements for Game
@@ -218,6 +290,7 @@ const act3El = document.getElementById('act-iii');
 // --- ACT TRANSITIONS ---
 
 document.getElementById('start-btn').addEventListener('click', () => {
+    audioManager.init(); // Resume AudioContext & decode SFX on first interaction
     gtag('event', 'sv_click_start');
     transitionToAct2();
 });
@@ -362,10 +435,7 @@ function startGameLevel(levelId) {
     gameState.activeEffects.clear();
 
     // Start ambient music
-    if (soundEnabled) {
-        ambientMusic.volume = AMBIENT_VOLUME;
-        ambientMusic.play().catch(() => { });
-    }
+    audioManager.startMusic();
 
     gameMessage.classList.add('hidden');
     nextBtn.classList.add('hidden');
@@ -482,7 +552,7 @@ function createCardElement(cardData) {
         if (gameState.isLocked || card.classList.contains('flipped') || card.classList.contains('matched') || card.classList.contains('selected')) return;
 
         card.classList.add('flipped');
-        playSound('flip');
+        audioManager.play('flip');
         if (card.peekTimeout) clearTimeout(card.peekTimeout);
 
         card.peekTimeout = setTimeout(() => {
@@ -529,7 +599,7 @@ function selectCard(card) {
 
     card.classList.add('flipped');
     card.classList.add('selected');
-    playSound('select');
+    audioManager.play('select');
 
     gameState.flippedCards.push(card);
 
@@ -549,7 +619,7 @@ function checkMatch() {
         card2.classList.remove('selected');
         card1.classList.add('matched');
         card2.classList.add('matched');
-        playSound('match');
+        audioManager.play('match');
 
         // Spawn a big heart at card2's position
         const rect = card2.getBoundingClientRect();
@@ -634,18 +704,18 @@ function showMilestonePopup(milestone) {
     milestoneImg.src = milestone.img;
     milestoneText.textContent = milestone.text;
     milestonePopup.classList.add('visible');
-    playSound('milestone');
+    audioManager.play('milestone');
 
     // Pause timer, lock game, and duck music
     gameState.activeEffects.add('freeze_timer');
     gameState.isLocked = true;
-    ambientMusic.volume = AMBIENT_VOLUME_DUCKED;
+    audioManager.duckMusic(true);
 
     milestoneBtn.onclick = () => {
         milestonePopup.classList.remove('visible');
         gameState.activeEffects.delete('freeze_timer');
         gameState.isLocked = false;
-        ambientMusic.volume = AMBIENT_VOLUME;
+        audioManager.duckMusic(false);
     };
 }
 
@@ -658,11 +728,12 @@ function updateTimerUI(current, total) {
 
 function handleLevelWin() {
     clearInterval(gameState.timer);
-    ambientMusic.volume = AMBIENT_VOLUME_DUCKED;
+    audioManager.duckMusic(true);
     triggerWinParticles();
 
     setTimeout(() => {
-        playSound('level');
+        audioManager.duckMusic(false);
+        audioManager.play('level');
         if (gameState.mode === 'story') {
             // STORY MODE WIN LOGIC
             if (gameState.level === 5) {
@@ -701,8 +772,8 @@ function handleLevelWin() {
 }
 
 function handleLevelLoss() {
-    playSound('level');
-    ambientMusic.volume = AMBIENT_VOLUME_DUCKED;
+    audioManager.play('level');
+    audioManager.duckMusic(true);
     if (gameState.mode === 'story') {
         gtag('event', 'sv_level_fail', { level: gameState.level, mode: 'story' });
         gameMessageText.textContent = "Time's up! 💔";
