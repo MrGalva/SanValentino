@@ -70,7 +70,7 @@ const SPECIAL_CARDS = {
                 bar.classList.remove('frozen');
             }, 2000);
         },
-        description: 'Congela il tempo per 4s!'
+        description: 'Congela il tempo per 2s!'
     },
     'M': {
         name: 'Swipe Block',
@@ -145,6 +145,19 @@ const sounds = {
     milestone: new Audio('assets/sounds/milestone.wav'),
 };
 
+// Audio pools for high-frequency sounds (fixed memory, round-robin)
+const POOL_SIZES = { flip: 20, match: 6, select: 6 };
+const soundPool = {};
+for (const [name, size] of Object.entries(POOL_SIZES)) {
+    const pool = Array.from({ length: size }, () => {
+        const clone = sounds[name].cloneNode();
+        clone.volume = 0.5;
+        return clone;
+    });
+    pool.idx = 0;
+    soundPool[name] = pool;
+}
+
 // Ambient music (persistent, not cloned)
 const AMBIENT_VOLUME = 0.12;
 const AMBIENT_VOLUME_DUCKED = 0.02;
@@ -154,8 +167,21 @@ ambientMusic.volume = AMBIENT_VOLUME;
 
 function playSound(name) {
     if (!soundEnabled || !sounds[name]) return;
+
+    // Pooled sounds (high-frequency)
+    if (soundPool[name]) {
+        const pool = soundPool[name];
+        const s = pool[pool.idx % pool.length];
+        pool.idx++;
+        s.currentTime = 0;
+        s.play().catch(() => { });
+        return;
+    }
+
+    // Self-cleaning clones (low-frequency: level, milestone)
     const s = sounds[name].cloneNode();
     s.volume = 0.5;
+    s.addEventListener('ended', () => { s.remove(); });
     s.play().catch(() => { });
 }
 
@@ -163,9 +189,7 @@ document.getElementById('sound-toggle').addEventListener('click', () => {
     soundEnabled = !soundEnabled;
     document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊' : '🔇';
     if (soundEnabled) {
-        if (!ambientMusic.paused || ambientMusic.currentTime > 0) {
-            ambientMusic.play().catch(() => { });
-        }
+        ambientMusic.play().catch(() => { });
     } else {
         ambientMusic.pause();
     }
@@ -183,6 +207,13 @@ const gameMessageText = document.getElementById('game-message-text');
 const nextBtn = document.getElementById('game-next-btn');
 const restartBtn = document.getElementById('game-restart-btn');
 const arcadeBtn = document.getElementById('game-arcade-btn'); // In Win screen
+
+// DOM Elements for Milestones
+const milestonePopup = document.getElementById('milestone-popup');
+const milestoneImg = document.getElementById('milestone-img');
+const milestoneText = document.getElementById('milestone-text');
+const milestoneBtn = document.getElementById('milestone-btn');
+const act3El = document.getElementById('act-iii');
 
 // --- ACT TRANSITIONS ---
 
@@ -263,7 +294,7 @@ function getArcadeConfig(level) {
     else if (level >= 6) pairs = 10;
 
     // Time Calculation
-    let time = pairs * (5.1 - (1.8 * gameState.level / 10));
+    let time = pairs * (5.1 - (1.8 * level / 10));
 
     return {
         id: level,
@@ -467,11 +498,7 @@ function createCardElement(cardData) {
         if (gameState.isLocked) return;
         if (card.classList.contains('matched') || card.classList.contains('selected')) return;
 
-        if (gameState.flippedCards.length === 0) {
-            selectCard(card);
-            if (card.peekTimeout) clearTimeout(card.peekTimeout);
-        }
-        else if (gameState.flippedCards.length === 1) {
+        if (gameState.flippedCards.length < 2) {
             selectCard(card);
             if (card.peekTimeout) clearTimeout(card.peekTimeout);
         }
@@ -481,8 +508,7 @@ function createCardElement(cardData) {
 }
 
 document.addEventListener('touchmove', function (e) {
-    const act3 = document.getElementById('act-iii');
-    if (act3.classList.contains('hidden')) return;
+    if (act3El.classList.contains('hidden')) return;
     if (gameState.activeEffects.has('block_swipe')) return;
     if (gameState.flippedCards.length > 0) return;
 
@@ -560,14 +586,7 @@ function checkMatch() {
         }
 
         // Check Win
-        let requiredPairs;
-        if (gameState.mode === 'story') {
-            requiredPairs = gameState.pairs;
-        } else {
-            requiredPairs = gameState.pairs;
-        }
-
-        if (gameState.matchedPairs === requiredPairs) {
+        if (gameState.matchedPairs === gameState.pairs) {
             handleLevelWin();
         }
 
@@ -588,7 +607,7 @@ function startTimer(seconds) {
 
     gameState.timer = setInterval(() => {
         if (!gameState.activeEffects.has('freeze_timer')) {
-            gameState.timeLeft--;
+            gameState.timeLeft = Math.max(0, gameState.timeLeft - 1);
         }
 
         updateTimerUI(gameState.timeLeft, seconds);
@@ -612,14 +631,9 @@ function checkMilestones(prevScore, newScore) {
 }
 
 function showMilestonePopup(milestone) {
-    const popup = document.getElementById('milestone-popup');
-    const img = document.getElementById('milestone-img');
-    const text = document.getElementById('milestone-text');
-    const btn = document.getElementById('milestone-btn');
-
-    img.src = milestone.img;
-    text.textContent = milestone.text;
-    popup.classList.add('visible');
+    milestoneImg.src = milestone.img;
+    milestoneText.textContent = milestone.text;
+    milestonePopup.classList.add('visible');
     playSound('milestone');
 
     // Pause timer, lock game, and duck music
@@ -627,8 +641,8 @@ function showMilestonePopup(milestone) {
     gameState.isLocked = true;
     ambientMusic.volume = AMBIENT_VOLUME_DUCKED;
 
-    btn.onclick = () => {
-        popup.classList.remove('visible');
+    milestoneBtn.onclick = () => {
+        milestonePopup.classList.remove('visible');
         gameState.activeEffects.delete('freeze_timer');
         gameState.isLocked = false;
         ambientMusic.volume = AMBIENT_VOLUME;
@@ -712,11 +726,11 @@ function handleLevelLoss() {
 
 // --- PARTICLES ---
 function triggerWinParticles() {
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 40; i++) {
         const p = new Particle();
         p.x = width / 2 + (Math.random() - 0.5) * 60;
         p.y = height / 2 + (Math.random() - 0.5) * 60;
-        p.size = Math.random() * 12 + 8;
+        p.size = Math.random() * 16 + 8;
         p.speedY = Math.random() * 3 + 1.5;
         p.speedX = (Math.random() - 0.5) * 2;
         p.opacity = Math.random() * 0.4 + 0.6;
@@ -726,7 +740,7 @@ function triggerWinParticles() {
 
 // --- CANVAS LOGIC ---
 const CONFIG = {
-    particleCount: 60,
+    particleCount: 40,
     heartColor: '#ffb7c5',
     heartColor2: '#ff6b6b',
     interactionRadius: 55,
