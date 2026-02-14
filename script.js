@@ -135,6 +135,42 @@ const gameState = {
     assets: ['C', 'F', 'H', 'I', 'K', 'L', 'M', 'T', 'X', 'Y']
 };
 
+// --- SOUND SYSTEM ---
+let soundEnabled = true;
+const sounds = {
+    flip: new Audio('assets/sounds/card_flip.wav'),
+    match: new Audio('assets/sounds/card_match_pop.wav'),
+    select: new Audio('assets/sounds/card_select.wav'),
+    level: new Audio('assets/sounds/level.wav'),
+    milestone: new Audio('assets/sounds/milestone.wav'),
+};
+
+// Ambient music (persistent, not cloned)
+const AMBIENT_VOLUME = 0.12;
+const AMBIENT_VOLUME_DUCKED = 0.02;
+const ambientMusic = new Audio('assets/sounds/ambient_music.mp3');
+ambientMusic.loop = true;
+ambientMusic.volume = AMBIENT_VOLUME;
+
+function playSound(name) {
+    if (!soundEnabled || !sounds[name]) return;
+    const s = sounds[name].cloneNode();
+    s.volume = 0.5;
+    s.play().catch(() => { });
+}
+
+document.getElementById('sound-toggle').addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊' : '🔇';
+    if (soundEnabled) {
+        if (!ambientMusic.paused || ambientMusic.currentTime > 0) {
+            ambientMusic.play().catch(() => { });
+        }
+    } else {
+        ambientMusic.pause();
+    }
+});
+
 // DOM Elements for Game
 const gameGrid = document.getElementById('game-grid');
 const levelIndicator = document.getElementById('level-indicator');
@@ -294,6 +330,12 @@ function startGameLevel(levelId) {
     gameState.pairs = levelConfig.pairs;
     gameState.activeEffects.clear();
 
+    // Start ambient music
+    if (soundEnabled) {
+        ambientMusic.volume = AMBIENT_VOLUME;
+        ambientMusic.play().catch(() => { });
+    }
+
     gameMessage.classList.add('hidden');
     nextBtn.classList.add('hidden');
     restartBtn.classList.add('hidden');
@@ -409,6 +451,7 @@ function createCardElement(cardData) {
         if (gameState.isLocked || card.classList.contains('flipped') || card.classList.contains('matched') || card.classList.contains('selected')) return;
 
         card.classList.add('flipped');
+        playSound('flip');
         if (card.peekTimeout) clearTimeout(card.peekTimeout);
 
         card.peekTimeout = setTimeout(() => {
@@ -460,6 +503,7 @@ function selectCard(card) {
 
     card.classList.add('flipped');
     card.classList.add('selected');
+    playSound('select');
 
     gameState.flippedCards.push(card);
 
@@ -479,6 +523,7 @@ function checkMatch() {
         card2.classList.remove('selected');
         card1.classList.add('matched');
         card2.classList.add('matched');
+        playSound('match');
 
         // Spawn a big heart at card2's position
         const rect = card2.getBoundingClientRect();
@@ -575,15 +620,18 @@ function showMilestonePopup(milestone) {
     img.src = milestone.img;
     text.textContent = milestone.text;
     popup.classList.add('visible');
+    playSound('milestone');
 
-    // Pause timer and lock game
+    // Pause timer, lock game, and duck music
     gameState.activeEffects.add('freeze_timer');
     gameState.isLocked = true;
+    ambientMusic.volume = AMBIENT_VOLUME_DUCKED;
 
     btn.onclick = () => {
         popup.classList.remove('visible');
         gameState.activeEffects.delete('freeze_timer');
         gameState.isLocked = false;
+        ambientMusic.volume = AMBIENT_VOLUME;
     };
 }
 
@@ -596,9 +644,11 @@ function updateTimerUI(current, total) {
 
 function handleLevelWin() {
     clearInterval(gameState.timer);
+    ambientMusic.volume = AMBIENT_VOLUME_DUCKED;
     triggerWinParticles();
 
     setTimeout(() => {
+        playSound('level');
         if (gameState.mode === 'story') {
             // STORY MODE WIN LOGIC
             if (gameState.level === 5) {
@@ -637,6 +687,8 @@ function handleLevelWin() {
 }
 
 function handleLevelLoss() {
+    playSound('level');
+    ambientMusic.volume = AMBIENT_VOLUME_DUCKED;
     if (gameState.mode === 'story') {
         gtag('event', 'sv_level_fail', { level: gameState.level, mode: 'story' });
         gameMessageText.textContent = "Time's up! 💔";

@@ -475,6 +475,28 @@
             letter-spacing: 0.5px;
         }
 
+        /* Sound Toggle */
+        #sound-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.7);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 0;
+            margin: 0;
+            animation: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         /* Milestone Popup */
         #milestone-popup {
             position: fixed;
@@ -531,6 +553,9 @@
 
 <body>
 
+    <!-- Sound Toggle -->
+    <button id="sound-toggle">🔊</button>
+
     <!-- Global Canvas Background (Visible in Act II and III) -->
     <canvas id="canvas"></canvas>
 
@@ -584,7 +609,7 @@
         <button id="milestone-btn" style="margin-top: 16px;">Continue</button>
     </div>
 
-    <div id="version-label">v2.2</div>
+    <div id="version-label">v3.0</div>
     <script src="script.js"></script>
 </body>
 
