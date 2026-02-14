@@ -167,9 +167,23 @@ class AudioManager {
         // Web Audio Context (graceful fallback if unavailable)
         try {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+            // SFX Gain
             this.gainNode = this.ctx.createGain();
             this.gainNode.gain.value = this.sfxVol;
             this.gainNode.connect(this.ctx.destination);
+
+            // Music Gain (for iOS volume control)
+            this.musicGain = this.ctx.createGain();
+            this.musicGain.gain.value = this.ambientVol;
+            this.musicGain.connect(this.ctx.destination);
+
+            // Connect Ambient Element to Web Audio Graph
+            // This allows volume control on iOS where .volume property is ignored
+            if (this.ctx.createMediaElementSource) {
+                const source = this.ctx.createMediaElementSource(this.ambient);
+                source.connect(this.musicGain);
+            }
         } catch (e) {
             this.useWebAudio = false;
             this.ctx = null;
@@ -265,10 +279,19 @@ class AudioManager {
     startMusic() {
         this.musicStarted = true;
         if (this.enabled && (this.ambient.paused || this.ambient.currentTime === 0)) {
-            this.ambient.volume = this.ambientVol;
+            if (this.useWebAudio && this.musicGain) {
+                this.musicGain.gain.value = this.ambientVol;
+            } else {
+                this.ambient.volume = this.ambientVol;
+            }
             this.ambient.play().catch(() => { });
         } else if (this.enabled) {
-            this.ambient.volume = this.ambientVol;
+            // Ensure volume is correct even if already playing
+            if (this.useWebAudio && this.musicGain) {
+                this.musicGain.gain.value = this.ambientVol;
+            } else {
+                this.ambient.volume = this.ambientVol;
+            }
         }
     }
 
